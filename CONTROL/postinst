@@ -1,0 +1,11 @@
+#!/bin/sh
+echo "***********************************"
+echo "*          MediaCockpit           *"
+echo "*               by                *"
+echo "*          xcentaurix             *"
+echo "***********************************"
+echo ""
+echo "Plugin MediaCockpit installed successfully."
+echo "Please restart Enigma2 now!"
+echo ""
+exit 0

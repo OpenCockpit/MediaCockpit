@@ -1,0 +1,40 @@
+- widget:
+    name: "icon"
+    position: "100,100"
+    size: "150,150"
+    zPosition: "3"
+- widget:
+    name: "thumbnail"
+    position: "0,0"
+    size: "350,350"
+    zPosition: "3"
+- widget:
+    backgroundColorSelected: "$backgroundColorSelected"
+    enableWrapAround: "1"
+    foregroundColorSelected: "$foregroundColorSelected"
+    itemCornerRadiusSelected: "$radius_item"
+    position: "$width-1332,0"
+    render: "Listbox"
+    scrollbarMode: "showOnDemand"
+    size: "1332,eval($height/$list_item_height*$list_item_height)"
+    source: "list"
+    transparent: "1"
+    zPosition: "3"
+    children:
+      - convert:
+          type: "COCTemplatedMultiContentEx"
+          cell:
+            itemHeight: $list_item_height
+            fonts:
+              - "$md_body_large"
+            fields:
+              - text:
+                  position: "5,0"
+                  size: "300,45"
+                  flags: RT_VALIGN_CENTER
+                  value: 0
+              - text:
+                  position: "310,0"
+                  size: "1016,45"
+                  flags: RT_VALIGN_CENTER
+                  value: 1

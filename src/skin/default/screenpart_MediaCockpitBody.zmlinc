@@ -1,0 +1,56 @@
+- for:
+    var: "$i"
+    range: [0, 14]
+    body:
+      - widget:
+          cornerRadius: "$radius_tile"
+          name: "Frame$i"
+          position: "eval(25+$i%5*370),eval($i/5*304)"
+          size: "330,280"
+          zPosition: "2"
+- for:
+    var: "$i"
+    range: [0, 14]
+    body:
+      - widget:
+          cornerRadius: "$radius_tile"
+          name: "Tile$i"
+          position: "eval(30+$i%5*370),eval(5+$i/5*304)"
+          size: "320,270"
+          zPosition: "3"
+- for:
+    var: "$i"
+    range: [0, 14]
+    body:
+      - widget:
+          alphatest: "blend"
+          backgroundColor: "#00000000"
+          name: "Icon$i"
+          position: "eval(115+$i%5*370),eval(40+$i/5*304)"
+          size: "150,150"
+          transparent: "1"
+          zPosition: "4"
+- for:
+    var: "$i"
+    range: [0, 14]
+    body:
+      - widget:
+          font: "$md_body_small"
+          halign: "center"
+          name: "Text$i"
+          position: "eval(45+$i%5*370),eval(200+$i/5*304)"
+          size: "290,60"
+          transparent: "1"
+          valign: "center"
+          zPosition: "4"
+- for:
+    var: "$i"
+    range: [0, 14]
+    body:
+      - widget:
+          cornerRadius: "$radius_tile_inner"
+          name: "Picture$i"
+          position: "eval(38+$i%5*370),eval(13+$i/5*304)"
+          scale: "centerScaled"
+          size: "304,254"
+          zPosition: "5"
