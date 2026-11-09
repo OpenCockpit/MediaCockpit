@@ -10,15 +10,12 @@
     zPosition: "3"
 - widget:
     backgroundColorSelected: "$backgroundColorSelected"
-    enableWrapAround: "1"
     foregroundColorSelected: "$foregroundColorSelected"
     itemCornerRadiusSelected: "$radius_item"
     position: "$width-1332,0"
     render: "Listbox"
-    scrollbarMode: "showOnDemand"
     size: "1332,eval($height/$list_item_height*$list_item_height)"
     source: "list"
-    transparent: "1"
     zPosition: "3"
     children:
       - convert:
