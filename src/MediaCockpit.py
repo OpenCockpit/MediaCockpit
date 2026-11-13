@@ -52,6 +52,11 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         self.playlist_path = ""     # the .m3u whose entries are listed, "" when a folder is shown
         self.slideshow = False
         self.first_start = True
+        # The live service is restarted and stopped again to clear the video plane ("clear video buffer"). Every play of the
+        # service makes the service list search all bouquets (~0.5 s, main thread blocked), so it is only done when needed:
+        # whenever the screen is shown, except after a slideshow in which no video was played (the video plane was not touched).
+        self.clear_video_buffer = True
+        self.video_played = False   # set by the Slideshow when it plays a video
         self.service_center = ServiceCenter()
         self.return_dir = ""
         self.return_path = ""
@@ -124,7 +129,12 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         logger.info("...")
         FileManager.getInstance(ID).onDatabaseLoaded(self.loadList)
         # FileManager.getInstance(ID).onDatabaseChanged(self.loadList)
-        self.stopService(self.session, self.last_service)
+        clear = self.clear_video_buffer
+        self.clear_video_buffer = True
+        if clear:
+            self.stopService(self.session, self.last_service)
+        else:
+            logger.debug("no video was played: video plane not touched, nothing to clear")
         if self.first_start:
             self.loadList()
 
@@ -250,15 +260,15 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
                                       self.media_list, self.media_index, self.slideshow, self.song_list)
 
     def SlideshowCallback(self, path):
-        # clear video buffer
-        self.startService(self.session, self.last_service)
-        self.stopService(self.session, self.last_service)
+        # the video buffer is cleared by onDialogShow() (self.show() in setTilesCursor), once, and only if a video was played
+        self.clear_video_buffer = self.video_played
+        self.video_played = False
         self.setTilesCursor(getIndex(self.file_list, path))
+        self.clear_video_buffer = True   # if the screen was not hidden, onDialogShow() did not consume it
 
     def CockpitPlayerCallback(self, _reopen=False):
-        # clear video buffer
-        self.startService(self.session, self.last_service)
-        self.stopService(self.session, self.last_service)
+        # the player used the service: the video buffer is cleared by onDialogShow() (self.show() in setTilesCursor)
+        self.clear_video_buffer = True
         self.setTilesCursor(self.file_index)
 
     def setTilesCursor(self, file_index):

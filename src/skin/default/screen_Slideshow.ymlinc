@@ -17,12 +17,13 @@ screen:
     - widget:
         name: "picture"
         position: "0,0"
-        scale: "scaleCenter"
+        scaleFlags: "scaleCenter"
         size: "1920,1080"
         zPosition: "2"
-    - eLabel:
+    - widget:
         backgroundColor: "md_scrim"
         cornerRadius: "$radius_window"
+        name: "bar_background"
         position: "20,12"
         size: "$screen_width-40,44"
         zPosition: "5"
@@ -43,6 +44,17 @@ screen:
         position: "20,$screen_height-58"
         size: "$screen_width-40,48"
         zPosition: "-1"
+    - widget:
+        backgroundColor: "md_scrim"
+        cornerRadius: "$radius_window"
+        font: "$md_label_large"
+        foregroundColor: "md_on_surface"
+        halign: "center"
+        name: "toast"
+        position: "560,72"
+        size: "800,52"
+        valign: "center"
+        zPosition: "8"
     - xmlinc:
         file: "screenpart_WindowFooter.ymlinc"
         buttons_bar_z: "0"

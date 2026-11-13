@@ -13,6 +13,7 @@ from Components.Button import Button
 from Components.Sources.List import List
 from Components.ActionMap import HelpableActionMap
 from Tools.LoadPixmap import LoadPixmap
+from .PixmapUtils import loadPixmap
 from .__init__ import _
 from .Debug import logger
 from .FileManagerUtils import MDC_IDX_PATH, MDC_IDX_MEDIA, MDC_IDX_DATE
@@ -26,7 +27,7 @@ from .Display import Display
 
 
 GRAB_SRC_LINK = "/tmp/mediacockpit_grab_src"   # symlink to the movie, see grabThumbnail()
-GRAB_TMP = "/tmp/mediacockpit_grab.jpg"        # the grabbed frame (a few KB)
+GRAB_TMP = "/tmp/mediacockpit_grab" + ".jpg"   # the grabbed frame (a few KB). Not one literal: gitupdatepics takes a literal ending in .jpg for a skin picture
 
 
 class MediaInfo(Screen, HelpableScreen, Display):
@@ -219,7 +220,8 @@ class MediaInfo(Screen, HelpableScreen, Display):
 
     def showThumbnail(self, path):
         if os.path.exists(path):
-            ptr = LoadPixmap(path, cached=False)
-            self["thumbnail"].instance.setPixmap(ptr)
-            self["thumbnail"].show()
-            self["icon"].hide()
+            ptr = loadPixmap(path)
+            if ptr:
+                self["thumbnail"].instance.setPixmap(ptr)
+                self["thumbnail"].show()
+                self["icon"].hide()

@@ -5,9 +5,7 @@
 import os
 from Screens.HelpMenu import HelpableScreen
 from Screens.Screen import Screen
-from Screens.MessageBox import MessageBox
-from Tools import Notifications
-from Tools.LoadPixmap import LoadPixmap
+from .PixmapUtils import loadPixmap
 from Components.ActionMap import HelpableActionMap
 from Components.Label import Label
 from Components.Pixmap import Pixmap
@@ -39,15 +37,7 @@ from .Thumbnail import Thumbnail
 from .Display import Display
 from .Version import ID
 
-TOAST_ID = "MDC_toast"
-TOAST_TIMEOUT = 5
-
-
-def showToast(text, timeout=TOAST_TIMEOUT):
-    """A short message that does not stop the slideshow: an info popup (Tools.Notifications) that any key or the timeout
-    closes and that replaces the one still showing."""
-    Notifications.RemovePopup(TOAST_ID)
-    Notifications.AddPopup(text, MessageBox.TYPE_INFO, timeout=timeout, close_on_any_key=True, id=TOAST_ID)
+TOAST_TIMEOUT = 3
 
 
 class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
@@ -64,6 +54,11 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         self["key_blue"] = Button(_("Toggle Transition"))
         self["bar_background"] = Label()
         self["bar_separator"] = Label()
+        # A short message inside the screen. Tools.Notifications popups are only shown by the InfoBar, i.e. never while this
+        # screen is open: they would queue up and appear after leaving the slideshow.
+        self["toast"] = Label()
+        self.toast_timer = eTimer()
+        self.toast_timer.callback.append(self.hideToast)
 
         Thumbnail.__init__(self)
         Display.__init__(self, self)
@@ -128,6 +123,14 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
 
         self.onLayoutFinish.append(self.__onLayoutFinish)
 
+    def showToast(self, text, timeout=TOAST_TIMEOUT):
+        self["toast"].setText(text)
+        self["toast"].show()
+        self.toast_timer.start(timeout * 1000, True)
+
+    def hideToast(self):
+        self["toast"].hide()
+
     def createSummary(self):
         return MediaCockpitSummary
 
@@ -140,6 +143,7 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
             ePoint(self.desktop_size.width() // 10 // 2, self.desktop_size.height() // 10 // 4))
         self["picture_background"].hide()
         self["bar_background"].show()
+        self["osd_info"].show()
         self["bar_separator"].show()
         self["key_red"].show()
         self["key_green"].show()
@@ -153,6 +157,7 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         self["picture"].instance.move(ePoint(0, 0))
         self["picture_background"].show()
         self["bar_background"].hide()
+        self["osd_info"].hide()
         self["bar_separator"].hide()
         self["key_red"].hide()
         self["key_green"].hide()
@@ -167,6 +172,7 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
 
     def __onLayoutFinish(self):
         logger.debug("...")
+        self["toast"].hide()
         if findMediaIndex(self.file_list) >= 0:
             self.hideButtons()
             self.file = self.file_list[self.file_index]
@@ -226,7 +232,7 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
             self.show()
             self.showButtons()
         self.showLCDInfo()
-        showToast(text or _("End of slideshow"))
+        self.showToast(text or _("End of slideshow"))
 
     def cancelShow(self):
         """Forget a slide that is waiting for its delay: every navigation would otherwise queue one more showSlide() and
@@ -295,8 +301,9 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         logger.info("path: %s, index: %s", path, self.file_index)
         path = getPicturePath(path)
         self["picture"].instance.setPixmap(gPixmapPtr())
-        picture = LoadPixmap(path, cached=False)
-        self["picture"].instance.setPixmap(picture)
+        picture = loadPixmap(path)
+        if picture:
+            self["picture"].instance.setPixmap(picture)
 
     def hidePicture(self):
         logger.info("...")
@@ -316,6 +323,7 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
             logger.debug("already playing")
             return
         self["picture"].instance.setPixmap(gPixmapPtr())
+        self.csel.video_played = True   # MediaCockpit has to clear the video plane when it comes back
         self.video.play(filename)
 
     def showVideoCallback(self):
@@ -342,7 +350,7 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
 
     def toggleTransitionMode(self):
         if not self.picani:
-            showToast(_("Transitions need PicAniCockpit"))
+            self.showToast(_("Transitions need PicAniCockpit"))
             return
         # next entry of the list of the engine in use (the ids of PicAniCockpit are not consecutive)
         ids = [animation[0] for animation in self.slideshow_animations]
@@ -356,7 +364,7 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
             if animation[0] == str(self.animation):
                 sanimation = animation[1]
                 break
-        showToast(_("Animation") + " " + str(self.animation) + ": " + sanimation)
+        self.showToast(_("Animation") + " " + str(self.animation) + ": " + sanimation)
 
     def imageChanged(self):
         logger.debug("...")
@@ -427,6 +435,7 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
 
     def exit(self):
         self.slide_timer.stop()
+        self.toast_timer.stop()
         DelayTimer.stopAll()
         self.stopVideo()
         self.music.stop()
@@ -439,7 +448,7 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
 
     def yellow(self):
         if self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PICTURE:
-            showToast(_("Rotating picture..."))
+            self.showToast(_("Rotating picture..."))
             # rotating blocks the main loop for a while: give the toast a chance to be painted first
             DelayTimer(100, self.rotatePicture, self.file)
 

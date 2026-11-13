@@ -13,6 +13,7 @@ from Tools.LoadPixmap import LoadPixmap
 from Plugins.SystemPlugins.MountCockpit.MountCockpit import MountCockpit
 from skin import parseColor
 from .SkinUtils import getSkinPath
+from .PixmapUtils import loadPixmap
 from .Debug import logger
 from .__init__ import _
 from .FileManagerUtils import MDC_IDX_MEDIA, MDC_IDX_PATH
@@ -71,8 +72,12 @@ class Tiles(Display):
     def initTileAttribs(self):
         logger.debug("...")
         self.icons = {}
-        self.icon_size = self.csel["Icon0"].instance.size()
-        self.thumbnail_size = self.csel["Picture0"].instance.size()
+        # initTileAttribs() runs every time the screen is shown, possibly while tile 0 is selected: the selected tile is
+        # enlarged by 2 * selection_size_offset, and icons rendered at that size are clipped in the normal tiles. Measure a tile
+        # that is not selected.
+        ref = 1 if self.last_tile_pos == 0 and self.tiles > 1 else 0
+        self.icon_size = self.csel[f"Icon{ref}"].instance.size()
+        self.thumbnail_size = self.csel[f"Picture{ref}"].instance.size()
         if self.thumbnail_size.width() > 0 and self.thumbnail_size.height() > 0:
             # CacheCockpit creates thumbnails of this size while scanning
             config.plugins.mediacockpit.thumbnail_size_width.value = self.thumbnail_size.width()
@@ -183,9 +188,9 @@ class Tiles(Display):
                 if os.path.exists(thumbnail):
                     thumbnail_path = thumbnail
                     break
-        if thumbnail_path:
-            self.csel[f"Picture{tile_pos}"].instance.setPixmap(
-                LoadPixmap(thumbnail_path, cached=False))
+        thumbnail = loadPixmap(thumbnail_path) if thumbnail_path else None
+        if thumbnail:
+            self.csel[f"Picture{tile_pos}"].instance.setPixmap(thumbnail)
             self.csel[f"Icon{tile_pos}"].hide()
             self.csel[f"Text{tile_pos}"].hide()
             self.csel[f"Picture{tile_pos}"].show()
