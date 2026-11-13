@@ -19,26 +19,8 @@ msgstr "Beenden"
 msgid "Play/Pause"
 msgstr "Abspielen/Pausieren"
 
-msgid "Song"
-msgstr "Lied"
-
 msgid "Stop playback"
 msgstr "Stoppe Wiedergabe"
-
-msgid "Next song"
-msgstr "Nächstes Lied"
-
-msgid "Previous song"
-msgstr "Vorheriges Lied"
-
-msgid "Toggle shuffle"
-msgstr "Mischen an/aus"
-
-msgid "Toggle repeat"
-msgstr "Wiederholen an/aus"
-
-msgid "This Dreambox can't decode %s streams!"
-msgstr "Diese Dreambox kann keine %s Streams decodieren!"
 
 msgid "Skip forward"
 msgstr "Springe vorwärts"
@@ -163,9 +145,6 @@ msgstr "Erste Sprungmarke"
 msgid "event start"
 msgstr "Sendungsanfang"
 
-msgid "COCKPIT"
-msgstr "COCKPIT"
-
 msgid "Start with top level favorites"
 msgstr "Lesezeichen beim Start des Plugins"
 
@@ -244,29 +223,14 @@ msgstr "Vorschaubilder"
 msgid "Should thumbnails be created automatically?"
 msgstr "Sollen Vorschaubilder automatisch generiert werden?"
 
-msgid "SLIDESHOW"
-msgstr "DIASHOW"
-
-msgid "Duration"
-msgstr "Anzeigedauer"
-
 msgid "Select the duration for the display of a slide."
 msgstr "Wie lange soll ein Dia in einer Diashow angezeigt werden?"
 
 msgid "Animation"
 msgstr "Bildübergang"
 
-msgid "Which animation should be used for slide transistions?"
-msgstr "Welche Animation soll für den Übergang von Dias verwendet werden?"
-
-msgid "Endless loop"
-msgstr "Endlosschleife"
-
 msgid "Should slideshows be run in an endless loop?"
 msgstr "Sollen Diashows in einer Endlosschleife laufen?"
-
-msgid "PLAYLIST"
-msgstr "PLAYLISTE"
 
 msgid "Recurse directories"
 msgstr "Lade Verzeichnisse rekursiv"
@@ -274,23 +238,8 @@ msgstr "Lade Verzeichnisse rekursiv"
 msgid "Should directories be loaded recursively?"
 msgstr "Sollen Verzeichnisse rekursiv geladen werden?"
 
-msgid "PICTURE"
-msgstr "BILD"
-
-msgid "Foreground color"
-msgstr "Vordergrundfarbe"
-
-msgid "Select the forground color of icons."
-msgstr "In welcher Farbe soll der Vordergrund für Media Icons angezeigt werden?"
-
-msgid "Background color"
-msgstr "Hintergrundfarbe"
-
 msgid "Select the background color for icons."
 msgstr "In welcher Farbe soll der Hintergrund für Media Icons angezeigt werden?"
-
-msgid "VIDEO"
-msgstr "VIDEO"
 
 msgid "Resume video at last position"
 msgstr "Starte Film an letzter Stopp-Marke"
@@ -304,50 +253,14 @@ msgstr "Starte den Film an"
 msgid "Select at which position video is started at."
 msgstr "An welcher Position soll der Film gestartet werden: Filmanfang, erste Sprungmarke oder Sendungsanfang?"
 
-msgid "Date format"
-msgstr "Datumsformat"
-
 msgid "Select the date format."
 msgstr "Welches Format für die Anzeige des Aufnahmedatums soll in der  Filmliste verwendet werden?"
-
-msgid "MUSIC"
-msgstr "MUSIK"
-
-msgid "Gapless playback"
-msgstr "Wiedergabe ohne Unterbrechungen"
-
-msgid "Should gapless playback be used?"
-msgstr "Soll die Wiedergabe ohne Unterbrechungen erfolgen?"
-
-msgid "Alsasink"
-msgstr "GStreamer Alsasink"
-
-msgid "Should the GStreamer Alsasink decoder be used?"
-msgstr "Soll der GStreamer Alsasink Decoder verwendet werden?"
-
-msgid "Cover download path"
-msgstr "Musik Cover Verzeichnis"
-
-msgid "Select the path for cover downloads."
-msgstr "In welchem Verzeichnis sollen Musik Cover gespeichert werden?"
-
-msgid "CACHE"
-msgstr "CACHE"
 
 msgid "Cache directory"
 msgstr "Cache-Verzeichnis"
 
 msgid "Select directory for cache database file."
 msgstr "Auswahl des Verzeichnisses für die Cache Datenbank"
-
-msgid "DEBUG"
-msgstr "DEBUG"
-
-msgid "Debug log"
-msgstr "Debug Log"
-
-msgid "Should a debug log be activated?"
-msgstr "Soll ein Debug Log aktiviert werden?"
 
 msgid "MediaCockpit"
 msgstr "MediaCockpit"
@@ -543,6 +456,12 @@ msgstr "Seite"
 
 msgid "Pictures, Movies, and Slideshows"
 msgstr "Bilder, Filme und Diashows"
+
+msgid "End of slideshow"
+msgstr "Ende der Diashow"
+
+msgid "Video cannot be played"
+msgstr "Das Video kann nicht abgespielt werden"
 
 msgid "Log level"
 msgstr "Debug Log-Stufe"

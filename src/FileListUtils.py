@@ -5,12 +5,13 @@
 import os
 import json
 from six import text_type
+from six.moves.urllib.parse import unquote
 from Components.config import config
 from Plugins.SystemPlugins.CacheCockpit.FileManager import FileManager
 from .Debug import logger
 from .FileManagerUtils import MDC_TYPE_DIR
 from .FileManagerUtils import MDC_IDX_TYPE, MDC_IDX_PATH, MDC_IDX_MEDIA, MDC_IDX_META, MDC_IDX_DATE
-from .FileManagerUtils import MDC_MEDIA_TYPE_FILE, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MUSIC, MDC_MEDIA_TYPE_DIR, MDC_MEDIA_TYPE_UP
+from .FileManagerUtils import MDC_MEDIA_TYPE_FILE, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE, MDC_MEDIA_TYPE_MUSIC, MDC_MEDIA_TYPE_DIR, MDC_MEDIA_TYPE_UP
 from .ConfigInit import sort_modes
 from .Version import ID
 from .FileUtils import readFile
@@ -72,6 +73,16 @@ def getFile(file_list, value):
     return afile
 
 
+def findMediaIndex(file_list, start=0):
+    """Index of the first picture or movie at or after start (wrapping around), -1 if the list has none."""
+    length = len(file_list)
+    for i in range(length):
+        index = (max(start, 0) + i) % length
+        if file_list[index][MDC_IDX_MEDIA] in (MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE):
+            return index
+    return -1
+
+
 def splitMediaSongList(file_list):
     song_list = []
     media_list = []
@@ -119,14 +130,24 @@ def scanPlaylistFiles(path):
     logger.debug("path: %s", path)
     file_list = []
     playlist_dir = os.path.dirname(path)
-    lines = readFile(path).splitlines()
+    lines = readFile(path).lstrip("﻿").splitlines()  # a UTF-8 BOM would corrupt the first path
     for line in lines:
-        if line and not line.startswith("#"):
-            logger.debug("line: %s", line)
-            path = line
-            if not path.startswith("/"):
-                path = os.path.join(playlist_dir, path)
-            file_list.append(path)
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        logger.debug("line: %s", line)
+        if line.startswith("file://"):
+            line = unquote(line[len("file://"):])
+        elif "://" in line:
+            logger.debug("skip stream: %s", line)
+            continue
+        if not line.startswith("/"):
+            line = os.path.join(playlist_dir, line)
+        line = os.path.normpath(line)
+        if os.path.isfile(line):
+            file_list.append(line)
+        else:
+            logger.debug("skip missing file: %s", line)
     return file_list
 
 

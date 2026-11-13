@@ -173,12 +173,12 @@
 		<widget backgroundColor="md_surface" backgroundColorSelected="md_inverse_surface" enableWrapAround="1" foregroundColor="md_on_surface" foregroundColorSelected="md_inverse_on_surface" itemCornerRadiusSelected="12" position="466,146" render="Listbox" scrollbarMode="showOnDemand" scrollbarSliderBorderColor="md_on_surface" scrollbarSliderBorderWidth="1" scrollbarSliderForegroundColor="md_on_surface_variant" scrollbarWidth="5" selectionFrame="none" size="1332,765" source="list" transparent="1" zPosition="3">
 			<convert type="COCTemplatedMultiContentEx">
 			{
-				"template": [
-					MultiContentEntryText(pos=(5,0), size=(300,45), flags=RT_VALIGN_CENTER, text=0),
+						"template": [
+							MultiContentEntryText(pos=(5,0), size=(300,45), flags=RT_VALIGN_CENTER, text=0),
 					MultiContentEntryText(pos=(310,0), size=(1016,45), flags=RT_VALIGN_CENTER, text=1),
 				],
-				"fonts": [parseFont("Roboto;30")],
-				"itemHeight": 45
+						"fonts": [parseFont("Roboto;30")],
+						"itemHeight": 45
 			}
 			</convert>
 		</widget>

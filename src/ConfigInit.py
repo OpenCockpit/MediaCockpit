@@ -137,14 +137,10 @@ config.plugins.mediacockpit.picture_background = ConfigSelection(
     default="black", choices=choices_color)
 config.plugins.mediacockpit.picture_foreground = ConfigSelection(
     default="foreground", choices=choices_color)
-config.plugins.mediacockpit.non_standard_decoder = ConfigYesNo(
-    default=True)
 config.plugins.mediacockpit.cover_downloader = ConfigSelection(
     default="lastfm", choices=choices_cover_downloader)
 config.plugins.mediacockpit.database_directory = ConfigDirectory(
     default="/etc/enigma2")
-config.plugins.mediacockpit.gapless = ConfigYesNo(default=True)
-config.plugins.mediacockpit.alsasink = ConfigYesNo(default=True)
 config.plugins.mediacockpit.movie_resume_at_last_pos = ConfigYesNo(
     default=False)
 config.plugins.mediacockpit.movie_start_position = ConfigSelection(default="beginning", choices=[(

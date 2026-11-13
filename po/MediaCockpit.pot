@@ -19,25 +19,7 @@ msgstr ""
 msgid "Play/Pause"
 msgstr ""
 
-msgid "Song"
-msgstr ""
-
 msgid "Stop playback"
-msgstr ""
-
-msgid "Next song"
-msgstr ""
-
-msgid "Previous song"
-msgstr ""
-
-msgid "Toggle shuffle"
-msgstr ""
-
-msgid "Toggle repeat"
-msgstr ""
-
-msgid "This Dreambox can't decode %s streams!"
 msgstr ""
 
 msgid "Skip forward"
@@ -163,9 +145,6 @@ msgstr ""
 msgid "event start"
 msgstr ""
 
-msgid "COCKPIT"
-msgstr ""
-
 msgid "Start with top level favorites"
 msgstr ""
 
@@ -246,28 +225,13 @@ msgstr ""
 msgid "Should thumbnails be created automatically?"
 msgstr ""
 
-msgid "SLIDESHOW"
-msgstr ""
-
-msgid "Duration"
-msgstr ""
-
 msgid "Select the duration for the display of a slide."
 msgstr ""
 
 msgid "Animation"
 msgstr ""
 
-msgid "Which animation should be used for slide transistions?"
-msgstr ""
-
-msgid "Endless loop"
-msgstr ""
-
 msgid "Should slideshows be run in an endless loop?"
-msgstr ""
-
-msgid "PLAYLIST"
 msgstr ""
 
 msgid "Recurse directories"
@@ -276,22 +240,7 @@ msgstr ""
 msgid "Should directories be loaded recursively?"
 msgstr ""
 
-msgid "PICTURE"
-msgstr ""
-
-msgid "Foreground color"
-msgstr ""
-
-msgid "Select the forground color of icons."
-msgstr ""
-
-msgid "Background color"
-msgstr ""
-
 msgid "Select the background color for icons."
-msgstr ""
-
-msgid "VIDEO"
 msgstr ""
 
 msgid "Resume video at last position"
@@ -306,49 +255,13 @@ msgstr ""
 msgid "Select at which position video is started at."
 msgstr ""
 
-msgid "Date format"
-msgstr ""
-
 msgid "Select the date format."
-msgstr ""
-
-msgid "MUSIC"
-msgstr ""
-
-msgid "Gapless playback"
-msgstr ""
-
-msgid "Should gapless playback be used?"
-msgstr ""
-
-msgid "Alsasink"
-msgstr ""
-
-msgid "Should the GStreamer Alsasink decoder be used?"
-msgstr ""
-
-msgid "Cover download path"
-msgstr ""
-
-msgid "Select the path for cover downloads."
-msgstr ""
-
-msgid "CACHE"
 msgstr ""
 
 msgid "Cache directory"
 msgstr ""
 
 msgid "Select directory for cache database file."
-msgstr ""
-
-msgid "DEBUG"
-msgstr ""
-
-msgid "Debug log"
-msgstr ""
-
-msgid "Should a debug log be activated?"
 msgstr ""
 
 msgid "MediaCockpit"
@@ -544,6 +457,12 @@ msgid "Page"
 msgstr ""
 
 msgid "Pictures, Movies, and Slideshows"
+msgstr ""
+
+msgid "End of slideshow"
+msgstr ""
+
+msgid "Video cannot be played"
 msgstr ""
 
 msgid "Log level"

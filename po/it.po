@@ -49,35 +49,14 @@ msgstr "Riprendere la riproduzione dalla posizione %d:%02d:%02d?"
 msgid "Cancel"
 msgstr "Annullare"
 
-msgid "Save"
-msgstr "Salvare"
-
-msgid "Defaults"
-msgstr "Predefiniti"
-
-msgid "Really close without saving settings?"
-msgstr "Uscire senza salvare le modifiche?"
-
 msgid "Setup"
 msgstr "Impostazioni"
-
-msgid "Loading default settings will overwrite all settings, really load them?"
-msgstr "Le impostazioni predefinite sovrascriveranno tutte quelle presenti. Eseguire?"
-
-msgid "Some changes require a GUI restart"
-msgstr "Alcune modifiche richiedono il riavvio della GUI"
-
-msgid "Restart GUI now?"
-msgstr "Riavviare la GUI ora?"
 
 msgid "Bookmarks"
 msgstr "Segnalibri"
 
 msgid "Select directory"
 msgstr "Selezionare una directory"
-
-msgid "Path does not exist"
-msgstr "Percorso non presente"
 
 msgid "Close"
 msgstr "Chiudere"
@@ -106,29 +85,8 @@ msgstr "Attendere"
 msgid "min"
 msgstr "min"
 
-msgid "Select function"
-msgstr "Selezionare la funzione"
-
 msgid "About"
 msgstr "Informazioni"
-
-msgid "No override"
-msgstr "Non sovrascrivere"
-
-msgid "Video-button"
-msgstr "Pulsante Video"
-
-msgid "TV-button"
-msgstr "Pulsante TV"
-
-msgid "Radio-button"
-msgstr "Pulsante Radio"
-
-msgid "Quick-button"
-msgstr "Quick-button"
-
-msgid "Timeshift-button"
-msgstr "Pulsante Timeshift"
 
 msgid "DD.MM.YYYY"
 msgstr "GG.MM.AAAA"
@@ -241,27 +199,6 @@ msgstr "Primo contrassegno"
 msgid "event start"
 msgstr "Inizio evento"
 
-msgid "COCKPIT"
-msgstr "COCKPIT"
-
-msgid "Start plugin with key"
-msgstr "Avviare il plugin con un tasto"
-
-msgid "Select a key to start the plugin with."
-msgstr "Selezionare un tasto per l'avvio del plugin."
-
-msgid "Start with home directory"
-msgstr "Avviarsi nella directory home"
-
-msgid "Should the plugin load the home directory or the one that was used last?"
-msgstr "All'avvio caricare la directory home o l'ultima utilizzata?"
-
-msgid "Home directory"
-msgstr "Directory home"
-
-msgid "Select the directory to be considered the home directory"
-msgstr "Selezionare la directory da utilizzare come home"
-
 msgid "Sort"
 msgstr "Ordinare"
 
@@ -334,35 +271,14 @@ msgstr "Creare miniature"
 msgid "Should thumbnails be created automatically?"
 msgstr "Creare automaticamente le miniature?"
 
-msgid "Show detailed loading info"
-msgstr "Mostrare informazioni dettagliate caricamento"
-
-msgid "Should detailed loading info be shown?"
-msgstr "Mostrare informazioni dettagliate sul caricamento?"
-
-msgid "SLIDESHOW"
-msgstr "SLIDESHOW"
-
-msgid "Duration"
-msgstr "Durata"
-
 msgid "Select the duration for the display of a slide."
 msgstr "Selezionare il tempo di visualizzazione di una diapositiva nelle presentazioni."
 
 msgid "Animation"
 msgstr "Animazione"
 
-msgid "Which animation should be used for slide transistions?"
-msgstr "Quale animazione utilizzare nelle transizione diapositive?"
-
-msgid "Endless loop"
-msgstr "Loop infinito"
-
 msgid "Should slideshows be run in an endless loop?"
 msgstr "Eseguire le presentazioni in un loop infinito?"
-
-msgid "PLAYLIST"
-msgstr "PLAYLIST"
 
 msgid "Recurse directories"
 msgstr "Caricamento ricorsivo delle directory"
@@ -370,35 +286,8 @@ msgstr "Caricamento ricorsivo delle directory"
 msgid "Should directories be loaded recursively?"
 msgstr "Caricare le directory in modo ricorsivo?"
 
-msgid "PICTURE"
-msgstr "IMMAGINI"
-
-msgid "Foreground color"
-msgstr "Colore primo piano"
-
-msgid "Select the forground color of icons."
-msgstr "Selezionare il colore di primo piano delle icone."
-
-msgid "Background color"
-msgstr "Colore di sfondo"
-
 msgid "Select the background color for icons."
 msgstr "Selezionare il colore di sfondo delle icone."
-
-msgid "VIDEO"
-msgstr "VIDEO"
-
-msgid "No resume below 10 seconds"
-msgstr "Non riprendere sotto 10 secondi"
-
-msgid "Should marks below 10s be ignored when resuming video playback?"
-msgstr "Riavviando una riproduzione ignorare i contrassegni sotto i 10 secondi?"
-
-msgid "Jump to first mark when playing movie"
-msgstr "Passare al primo contrassegno in riproduzione video"
-
-msgid "Should videos automatically be started at the first mark?"
-msgstr "Avviare i filmati automaticamente dal primo contrassegno?"
 
 msgid "Resume video at last position"
 msgstr "Riprendere dall'ultima posizione"
@@ -412,110 +301,14 @@ msgstr "Avviare il video a"
 msgid "Select at which position video is started at."
 msgstr "Determinate da quale posizione il video debba essere avviato."
 
-msgid "Date format"
-msgstr "Formato data"
-
 msgid "Select the date format."
 msgstr "Selezionare il formato delle date."
-
-msgid "Enable playback auto-audio track selection"
-msgstr "Abilitare la selezione automatica della lingua"
-
-msgid "Enable playback of auto-audio track selection?"
-msgstr "Abilitare la selezione automatica della lingua?"
-
-msgid "Enable playback AC3-track first"
-msgstr "Preferire la traccia AC3"
-
-msgid "Enable playback of AC3-track first?"
-msgstr "Abilitare prioritariamente la traccia AC3?"
-
-msgid "Primary playback audio language"
-msgstr "Lingua audio: opzione preferenziale"
-
-msgid "Select the primary playback audio language."
-msgstr "Selezionare la traccia audio primaria."
-
-msgid "Secondary playback audio language"
-msgstr "Lingua audio: opzione secondaria"
-
-msgid "Select the secondary playback audio language."
-msgstr "Selezionare la traccia audio secondaria."
-
-msgid "Tertiary playback audio language"
-msgstr "Lingua audio: terza opzione"
-
-msgid "Select the tertiary playback audio language."
-msgstr "Selezionare la terza opzione per la traccia audio."
-
-msgid "Enable playback auto-subtitling"
-msgstr "Abilitare la riproduzione automatica dei sottotitoli"
-
-msgid "Enable playback of auto-subtitling?"
-msgstr "Abilitare la riproduzione automatica dei sottotitoli?"
-
-msgid "Primary playback subtitle language"
-msgstr "Lingua sottotitoli: opzione preferenziale"
-
-msgid "Select the primary playback subtitle language."
-msgstr "Selezionare la lingua sottotitoli primaria."
-
-msgid "Secondary playback subtitle language"
-msgstr "Lingua sottotitoli: opzione secondaria"
-
-msgid "Select the secondary playback subtitle language."
-msgstr "Selezionare la lingua sottotitoli secondaria."
-
-msgid "Tertiary playback subtitle language"
-msgstr "Lingua sottotitoli: terza opzione"
-
-msgid "Select the tertiary playback subtitle language."
-msgstr "Selezionare la terza opzione per la lingua sottotitoli."
-
-msgid "MUSIC"
-msgstr "MUSICA"
-
-msgid "Gapless playback"
-msgstr "Riproduzione senza pause"
-
-msgid "Should gapless playback be used?"
-msgstr "Utilizzare la riproduzione senza intervalli?"
-
-msgid "Alsasink"
-msgstr "Alsasink"
-
-msgid "Should the GStreamer Alsasink decoder be used?"
-msgstr "Utilizzare il decoder GStreamer Alsasink?"
-
-msgid "Cover download path"
-msgstr "Percorso download cover"
-
-msgid "Select the path for cover downloads."
-msgstr "Selezionare un percorso per il download cover."
-
-msgid "DEBUG"
-msgstr "DEBUG"
-
-msgid "Debug log"
-msgstr "Log di debug"
-
-msgid "Should a debug log be activated?"
-msgstr "Attivare un log di debug?"
-
-msgid "Log file path"
-msgstr "Percorso file di log"
-
-msgid "Select the path for a log file."
-msgstr "Selezionare il percorso del file di log."
 
 msgid "MediaCockpit"
 msgstr "MediaCockpit"
 
 msgid "Loading"
 msgstr "Caricamento in corso"
-
-msgid "files"
-msgstr "file"
 
 msgid "Play/Pause"
 msgstr "Play/Pausa"
@@ -634,24 +427,6 @@ msgstr "Longitudine GPS"
 msgid "Exif Version"
 msgstr "Versione Exif"
 
-msgid "Song"
-msgstr "Brano"
-
-msgid "Next song"
-msgstr "Brano successivo"
-
-msgid "Previous song"
-msgstr "Brano precedente"
-
-msgid "Toggle shuffle"
-msgstr "Riproduzione casuale On/Off"
-
-msgid "Toggle repeat"
-msgstr "Ripetizione On/Off"
-
-msgid "This Dreambox can't decode %s streams!"
-msgstr "Impossibile decodificare stream %s su questo Dreambox."
-
 msgid "Stop video/slideshow"
 msgstr "Stop video/presentazione"
 
@@ -714,6 +489,12 @@ msgstr "Commutare transizione"
 
 msgid "Toggle buttons"
 msgstr "Commutare pulsanti"
+
+msgid "End of slideshow"
+msgstr "Fine della presentazione"
+
+msgid "Video cannot be played"
+msgstr "Impossibile riprodurre il video"
 
 msgid "Infobar/Play"
 msgstr ""

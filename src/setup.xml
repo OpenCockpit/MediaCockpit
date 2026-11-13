@@ -24,8 +24,6 @@
 		<item level="1" text="Resume video at last position" description="Select whether video should be resumed at last stop position.">config.plugins.mediacockpit.movie_resume_at_last_pos</item>
 		<item level="1" text="Video start at" description="Select at which position video is started at.">config.plugins.mediacockpit.movie_start_position</item>
 		<item text="Movie date format" description="Select the date format.">config.plugins.mediacockpit.movie_date_format</item>
-		<item text="Gapless playback" description="Should gapless playback be used?">config.plugins.mediacockpit.gapless</item>
-		<item text="Alsasink" description="Should the GStreamer Alsasink decoder be used?">config.plugins.mediacockpit.alsasink</item>
 		<item text="Cache directory" description="Select directory for cache database file.">config.plugins.mediacockpit.database_directory</item>
 		<item level="2" text="Log level" description="Select the debug log level.">config.plugins.mediacockpit.debug_log_level</item>
 	</setup>

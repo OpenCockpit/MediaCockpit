@@ -20,7 +20,7 @@ from .Debug import logger
 from .FileManagerUtils import FILE_OP_LOAD
 from .FileManagerUtils import MDC_IDX_MEDIA, MDC_IDX_PATH, MDC_IDX_TYPE, MDC_IDX_BOOKMARK
 from .FileManagerUtils import MDC_TYPE_FILE, MDC_MEDIA_TYPE_FILE, MDC_MEDIA_TYPE_UP, MDC_MEDIA_TYPE_DIR, MDC_MEDIA_TYPE_PLAYLIST, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE
-from .FileListUtils import getFile, getDir, getPath, getIndex, nextIndex, splitMediaSongList, scanPlaylistFiles
+from .FileListUtils import getFile, getDir, getPath, getIndex, nextIndex, findMediaIndex, splitMediaSongList, scanPlaylistFiles
 from .FileUtils import deleteFiles
 from .MediaInfo import MediaInfo
 from .Tiles import Tiles
@@ -48,6 +48,7 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         self.media_list = []
         self.media_index = -1
         self.song_list = []
+        self.playlist_path = ""     # the .m3u whose entries are listed, "" when a folder is shown
         self.slideshow = False
         self.first_start = True
         self.service_center = ServiceCenter()
@@ -163,6 +164,7 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
     def readFileList(self, load_dir, load_path=""):
         logger.debug("load_dir: %s, load_path: %s", load_dir, load_path)
         self.hideTiles()
+        self.playlist_path = load_path if load_dir == "PLAYLIST" and load_path else ""
         if load_dir == "":
             self.file_list = createBookmarkEntries(self.bookmarks)
         else:
@@ -171,9 +173,12 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
                 if self.show_dirup_tile:
                     self.file_list.append(createParentDirEntry(load_path))
                 playlist = scanPlaylistFiles(load_path)
-                load_dir = load_path = os.path.splitext(load_path)[0]
-                self.file_list += sortList(
-                    FileManager.getInstance(ID).getFileListByList(playlist))
+                load_path = ""
+                # a playlist keeps the order of the .m3u, it is not sorted
+                order = {path: i for i, path in enumerate(playlist)}
+                files = list(FileManager.getInstance(ID).getFileListByList(playlist))
+                files.sort(key=lambda afile: order.get(afile[MDC_IDX_PATH], len(order)))
+                self.file_list += files
             else:
                 if self.show_dirup_tile:
                     self.file_list.append(createParentDirEntry(load_dir))
@@ -197,6 +202,11 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         self.changeDir("")
 
     def goUp(self):
+        if self.playlist_path:
+            # inside a playlist the entries can live anywhere: up always leads to the folder of the .m3u, cursor on the .m3u
+            logger.debug("playlist: %s", self.playlist_path)
+            self.changeDir(os.path.dirname(self.playlist_path), self.playlist_path)
+            return
         afile = getFile(self.file_list, self.file_index)
         logger.debug("afile: %s", afile)
         path = afile[MDC_IDX_PATH]
@@ -225,13 +235,18 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         self.readFileList(target_dir, target_path)
 
     def startSlideshow(self):
+        # start at the selected entry, or at the next picture/movie when it is a folder, parent tile or song
+        start_index = findMediaIndex(self.file_list, self.file_index)
+        if start_index < 0 or not self.media_list:
+            logger.debug("nothing to show")
+            self.slideshow = False
+            self.paintTiles()
+            return
         self.hide()
-        start_path = getPath(
-            self.file_list, self.file_index) if self.file_list else ""
-        if self.media_list and self.file_list[self.file_index][MDC_IDX_MEDIA] in [MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE]:
-            self.media_index = getIndex(self.media_list, start_path)
-            self.session.openWithCallback(self.SlideshowCallback, Slideshow, self,
-                                          self.media_list, self.media_index, self.slideshow, self.song_list)
+        start_path = getPath(self.file_list, start_index)
+        self.media_index = getIndex(self.media_list, start_path)
+        self.session.openWithCallback(self.SlideshowCallback, Slideshow, self,
+                                      self.media_list, self.media_index, self.slideshow, self.song_list)
 
     def SlideshowCallback(self, path):
         # clear video buffer
@@ -292,8 +307,10 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
                 self.file_index = nextIndex(
                     self.file_index, len(self.file_list))
                 self.startSlideshow()
-            elif afile[MDC_IDX_MEDIA] in [MDC_MEDIA_TYPE_DIR, MDC_MEDIA_TYPE_PLAYLIST]:
+            elif afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_DIR:
                 self.readFileList(afile[MDC_IDX_PATH])
+            elif afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PLAYLIST:
+                self.readFileList("PLAYLIST", afile[MDC_IDX_PATH])
             else:
                 self.slideshow = False
 
@@ -305,7 +322,7 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
             logger.info("path: %s", path)
             if afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_DIR:
                 self.changeDir(path)
-            if afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_UP:
+            elif afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_UP:
                 self.goUp()
             elif afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PLAYLIST:
                 path = afile[MDC_IDX_PATH]

@@ -4,6 +4,7 @@
 
 import os
 from random import shuffle
+from urllib.parse import quote
 from Screens.HelpMenu import HelpableScreen
 from Screens.Screen import Screen
 from Screens.MessageBox import MessageBox
@@ -34,7 +35,7 @@ from .MediaInfo import MediaInfo
 from .DelayTimer import DelayTimer
 from .FileUtils import deleteFile
 from .ConsoleAppContainer import ConsoleAppContainer
-from .FileListUtils import previousIndex, nextIndex
+from .FileListUtils import previousIndex, nextIndex, findMediaIndex, getPath
 from .ConfigInit import int_slideshow_animations, ext_slideshow_animations
 from .Thumbnail import Thumbnail
 from .Display import Display
@@ -42,6 +43,12 @@ from .Version import ID
 
 TOAST_ID = "MDC_toast"
 TOAST_TIMEOUT = 5
+
+
+def fileUri(path):
+    """file:// URI of path. Percent-encoded, so no space, quote, # or % can break the single-quoted command line (enigma2
+    splits the command on spaces itself and cannot escape a quote inside quotes)."""
+    return "file://" + quote(path)
 
 
 def showToast(text, timeout=TOAST_TIMEOUT):
@@ -117,6 +124,9 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         self.desktop_size = getDesktop(0).size()
         self.slide_timer = eTimer()
         self.slide_timer.callback.append(self.nextSlide)
+        self.show_timer = None      # DelayTimer of the slide that is about to be shown
+        self.video_failures = 0     # videos in a row that ended with an error
+        self.song_failures = 0
 
         self.video_container = ConsoleAppContainer(self.showVideoCallback)
         self.audio_container = ConsoleAppContainer(self.playSongCallback)
@@ -169,7 +179,7 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
 
     def __onLayoutFinish(self):
         logger.debug("...")
-        if self.file_list:
+        if findMediaIndex(self.file_list) >= 0:
             self.hideButtons()
             self.file = self.file_list[self.file_index]
             self.background_color = colorNames[config.plugins.mediacockpit.picture_background.value]
@@ -196,7 +206,8 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
                 self["image"].hide()
                 self.showSlide()
         else:
-            self.close(self.file_index)
+            # nothing to show (empty list or no picture/movie in it): without this the slideshow would skip forever
+            self.close(getPath(self.file_list, self.file_index))
 
     def setSlideshowAnimation(self, animation):
         logger.debug("animation: %s", animation)
@@ -227,9 +238,36 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
 
 # slide functions
 
+    def atLastSlide(self):
+        return self.file_index == (len(self.file_list) - 1 if self.direction else 0)
+
+    def endSlideshow(self, text=None):
+        """The running slideshow reached its last picture and "Slideshow endless loop" is off (or it cannot go on)."""
+        logger.info("end of slideshow")
+        self.slideshow_active = False
+        self.slide_timer.stop()
+        self.cancelShow()
+        if self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MOVIE:
+            # the screen is hidden while a video plays: bring it back, or only a black picture would be left
+            self.show()
+            self.showButtons()
+        self.showLCDInfo()
+        showToast(text or _("End of slideshow"))
+
+    def cancelShow(self):
+        """Forget a slide that is waiting for its delay: every navigation would otherwise queue one more showSlide() and
+        a video would be started several times."""
+        if self.show_timer is not None:
+            self.show_timer.stop()
+            self.show_timer = None
+
     def nextSlide(self):
         self.slide_timer.stop()
+        self.cancelShow()
         self.stopVideo()
+        if self.slideshow_active and not config.plugins.mediacockpit.slideshow_loop.value and self.atLastSlide():
+            self.endSlideshow()
+            return
         if self.direction:
             self.file_index = nextIndex(self.file_index, len(self.file_list))
         else:
@@ -238,13 +276,15 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         logger.info("***************   %s   ******************",
                     self.file_index)
         self.file = self.file_list[self.file_index]
-        DelayTimer(500, self.showSlide)
+        self.show_timer = DelayTimer(500, self.showSlide)
 
     def showSlide(self):
+        self.show_timer = None
         logger.info("file_index: %s, len(self.file_list): %s, media: %s",
                     self.file_index, len(self.file_list), self.file[MDC_IDX_MEDIA])
         self.hideButtons()
         if self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PICTURE:
+            self.video_failures = 0
             self.show()
             if self.external_slideshow and self.slideshow_active:
                 self["image"].setPicture(self.file[MDC_IDX_PATH])
@@ -284,15 +324,31 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
 
     def showVideo(self, filename):
         logger.info("filename: %s", filename)
+        if self.video_container.running():
+            logger.debug("already playing")
+            return
         self["picture"].instance.setPixmap(gPixmapPtr())
-        cmd = f"gst-launch-1.0 playbin -v uri='file://{filename}'"
+        cmd = f"gst-launch-1.0 playbin -v uri='{fileUri(filename)}'"
         if self.song_list:
             cmd += ' flags=0x51'
         logger.debug("cmd: %s", cmd)
         self.video_container.execute(cmd)
 
     def showVideoCallback(self):
-        logger.debug("slideshow_active: %s", self.slideshow_active)
+        """The video ended on its own (a stopped or skipped one never gets here)."""
+        failed = self.video_container.ret_val != 0
+        logger.debug("slideshow_active: %s, ret_val: %s, runtime: %.1f", self.slideshow_active,
+                     self.video_container.ret_val, self.video_container.runtime)
+        self.video_failures = self.video_failures + 1 if failed else 0
+        if self.slideshow_active:
+            if self.video_failures >= len(self.file_list):
+                # every slide failed in a row: carrying on would spin forever
+                self.endSlideshow(_("Video cannot be played"))
+                return
+            self.nextSlide()
+
+    def videoStopped(self):
+        """STOP on a video: carry on with the next slide when the slideshow runs."""
         if self.slideshow_active:
             self.nextSlide()
 
@@ -338,12 +394,16 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
 
     def playSong(self, afile):
         logger.info("song_index: %s, afile: %s", self.song_index, afile)
-        cmd = f"gst-launch-1.0 playbin uri='file://{afile[MDC_IDX_PATH]}' audio-sink='alsasink'"
+        cmd = f"gst-launch-1.0 playbin uri='{fileUri(afile[MDC_IDX_PATH])}'"
         logger.debug("cmd: %s", cmd)
         self.audio_container.execute(cmd)
 
     def playSongCallback(self):
-        logger.debug("...")
+        logger.debug("ret_val: %s", self.audio_container.ret_val)
+        self.song_failures = self.song_failures + 1 if self.audio_container.ret_val != 0 else 0
+        if self.song_failures >= len(self.song_list):
+            logger.warning("no song can be played, music stopped")
+            return
         self.song_index = (self.song_index + 1) % len(self.song_list)
         self.playSong(self.song_list[self.song_index_list[self.song_index]])
 
@@ -412,7 +472,7 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
     def stop(self):
         if self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MOVIE:
             self.stopVideo()
-            DelayTimer(250, self.showVideoCallback)
+            DelayTimer(250, self.videoStopped)
         else:
             self.slideshow_active = False
             self.slide_timer.stop()
@@ -421,6 +481,7 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
     def playpause(self):
         logger.debug("...")
         self.slideshow_active = not self.slideshow_active
+        self.cancelShow()
         if self.slideshow_active:
             self.hideButtons()
             self["image"].show()
