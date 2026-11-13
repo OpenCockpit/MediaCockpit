@@ -85,54 +85,6 @@ msgstr ""
 msgid "Alpha sort down"
 msgstr ""
 
-msgid "blinds"
-msgstr ""
-
-msgid "rotate"
-msgstr ""
-
-msgid "circular waves"
-msgstr ""
-
-msgid "door"
-msgstr ""
-
-msgid "dice"
-msgstr ""
-
-msgid "checkerboard"
-msgstr ""
-
-msgid "shutter"
-msgstr ""
-
-msgid "waves"
-msgstr ""
-
-msgid "windmill"
-msgstr ""
-
-msgid "earthquake"
-msgstr ""
-
-msgid "crossfade"
-msgstr ""
-
-msgid "random"
-msgstr ""
-
-msgid "Crossfade fast"
-msgstr ""
-
-msgid "Crossfade slow"
-msgstr ""
-
-msgid "Crossfade accelerated"
-msgstr ""
-
-msgid "Crossfade regular"
-msgstr ""
-
 msgid "default"
 msgstr ""
 
@@ -465,6 +417,21 @@ msgstr ""
 msgid "Video cannot be played"
 msgstr ""
 
+msgid "low"
+msgstr ""
+
+msgid "normal"
+msgstr ""
+
+msgid "high"
+msgstr ""
+
+msgid "none"
+msgstr ""
+
+msgid "Transitions need PicAniCockpit"
+msgstr ""
+
 msgid "Log level"
 msgstr ""
 
@@ -493,6 +460,27 @@ msgid "Select the foreground color of icons."
 msgstr ""
 
 msgid "Which animation should be used for slide transitions?"
+msgstr ""
+
+msgid "Transition duration"
+msgstr ""
+
+msgid ""
+"Select the duration of the transition between two slides (PicAniCockpit)."
+msgstr ""
+
+msgid "Transition quality"
+msgstr ""
+
+msgid ""
+"Select the transition quality. A higher quality needs more memory and "
+"preparation time (PicAniCockpit)."
+msgstr ""
+
+msgid "Ken Burns effect"
+msgstr ""
+
+msgid "Should pictures slowly zoom while they are shown (PicAniCockpit)?"
 msgstr ""
 
 msgid "Plugin"

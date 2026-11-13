@@ -5,6 +5,7 @@
 import os
 from PIL import Image
 from PIL import ImageFile
+from PIL import ImageOps
 from PIL.ExifTags import TAGS
 from .Debug import logger
 from . import pexif
@@ -66,7 +67,7 @@ def getExifData(path):
 def setExifOrientation(path, orientation):
     logger.debug("path: %s, orientation: %s", path, orientation)
     ext = os.path.splitext(path)[1]
-    if ext.lower() == ".jpg":
+    if ext.lower() in {".jpg", ".jpeg"}:
         try:
             img = pexif.JpegFile.fromFile(path)
             img.exif.primary.Orientation = [orientation]
@@ -77,12 +78,12 @@ def setExifOrientation(path, orientation):
 
 def rotatePicture(in_path, out_path, degrees):
     try:
-        img = Image.open(in_path)
-        if img:
+        with Image.open(in_path) as img:
             # Use Image.Resampling.NEAREST for Pillow >= 10.0.0
             resample = Image.Resampling.NEAREST
             tmpimg = img.rotate(degrees, resample=resample, expand=True)
-            tmpimg.save(out_path)
+            # every rotation re-encodes the previous result: keep JPEG losses small
+            _savePicture(tmpimg, out_path, img.format)
     except Exception as e:
         logger.error("in_path: %s, exception: %s", in_path, e)
         return False
@@ -91,21 +92,32 @@ def rotatePicture(in_path, out_path, degrees):
 
 def transformPicture(path, orientation):
     logger.debug("path: %s, orientation: %s", path, orientation)
+    degrees = {8: 90, 6: -90, 3: -180}.get(orientation)
+    if degrees is None:
+        return  # upright (or mirrored, which is not handled): nothing to do, do not even open the picture
     filename, ext = os.path.splitext(path)
     output_file = filename + ".transformed" + ext
+    # rotatePicture() writes no EXIF, so the copy is upright by itself and needs no orientation reset
+    rotatePicture(path, output_file, degrees)
+
+
+def _savePicture(img, out_path, img_format=None):
+    """Save img as out_path. The result is written to a temporary file first and renamed: a failed save would otherwise leave an
+    empty or truncated file behind, which then counts as an existing thumbnail/rotated copy forever."""
+    root, ext = os.path.splitext(out_path)
+    tmp_path = root + ".tmp" + ext
+    kwargs = {}
+    if img_format == "JPEG":
+        kwargs["quality"] = 95
+        if img.mode not in {"RGB", "L", "CMYK"}:
+            img = img.convert("RGB")
     try:
-        img = Image.open(path)
-        if img:
-            if orientation == 8:
-                rotatePicture(path, output_file, 90)
-            if orientation == 6:
-                rotatePicture(path, output_file, -90)
-            if orientation == 3:
-                rotatePicture(path, output_file, -180)
-            if orientation in {3, 6, 8}:
-                setExifOrientation(output_file, 1)
-    except Exception as e:
-        logger.error("path: %s, e: %s", path, e)
+        img.save(tmp_path, format=img_format, **kwargs)
+        os.replace(tmp_path, out_path)
+    except Exception:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        raise
 
 
 def createThumbnail(path, size, create=False):
@@ -117,12 +129,18 @@ def createThumbnail(path, size, create=False):
         input_path = filename + ".transformed" + ext
         if not os.path.exists(input_path):
             input_path = path
-        width = size.width()
-        height = size.height()
-        side = max(width, height)
+        side = max(size.width(), size.height())
+        if side <= 0:
+            logger.error("path: %s, no thumbnail size known yet: %s", path, str(size))
+            return
         try:
-            img = Image.open(input_path)
-            img.thumbnail((side, side))
-            img.save(thumbnail_path)
+            with Image.open(input_path) as img:
+                img_format = img.format
+                img.thumbnail((side, side))
+                if input_path == path:
+                    # the thumbnail does not keep the EXIF orientation of the original: apply it to the pixels
+                    # (after shrinking, which is much cheaper; the box is square, so the rotation does not matter for it)
+                    img = ImageOps.exif_transpose(img)
+                _savePicture(img, thumbnail_path, img_format)
         except Exception as e:
             logger.error("path: %s, exception: %s", path, e)

@@ -139,54 +139,6 @@ msgstr "Ordine alfabetico (A-Z)"
 msgid "Alpha sort down"
 msgstr "Ord. alfabetico (Z-A)"
 
-msgid "blinds"
-msgstr "Tendine"
-
-msgid "rotate"
-msgstr "Rotazione"
-
-msgid "circular waves"
-msgstr "Onde circolari"
-
-msgid "door"
-msgstr "Porta"
-
-msgid "dice"
-msgstr "Dadi"
-
-msgid "checkerboard"
-msgstr "Scacchiera"
-
-msgid "shutter"
-msgstr "Diaframma"
-
-msgid "waves"
-msgstr "Onde"
-
-msgid "windmill"
-msgstr "Mulino a vento"
-
-msgid "earthquake"
-msgstr "Terremoto"
-
-msgid "crossfade"
-msgstr "Dissolvenza incrociata"
-
-msgid "random"
-msgstr "Casuale"
-
-msgid "Crossfade fast"
-msgstr "Dissolvenza incrociata veloce"
-
-msgid "Crossfade slow"
-msgstr "Dissolvenza incrociata lenta"
-
-msgid "Crossfade accelerated"
-msgstr "Dissolvenza incrociata accelerata"
-
-msgid "Crossfade regular"
-msgstr "Dissolvenza incrociata standard"
-
 msgid "default"
 msgstr "Predefinito"
 
@@ -495,6 +447,39 @@ msgstr "Fine della presentazione"
 
 msgid "Video cannot be played"
 msgstr "Impossibile riprodurre il video"
+
+msgid "Transition duration"
+msgstr "Durata della transizione"
+
+msgid "Select the duration of the transition between two slides (PicAniCockpit)."
+msgstr "Selezionare la durata della transizione tra due diapositive (PicAniCockpit)."
+
+msgid "Transition quality"
+msgstr "Qualità della transizione"
+
+msgid "Select the transition quality. A higher quality needs more memory and preparation time (PicAniCockpit)."
+msgstr "Selezionare la qualità della transizione. Una qualità più alta richiede più memoria e tempo di preparazione (PicAniCockpit)."
+
+msgid "Ken Burns effect"
+msgstr "Effetto Ken Burns"
+
+msgid "Should pictures slowly zoom while they are shown (PicAniCockpit)?"
+msgstr "Le immagini devono ingrandirsi lentamente mentre vengono mostrate (PicAniCockpit)?"
+
+msgid "low"
+msgstr "bassa"
+
+msgid "normal"
+msgstr "normale"
+
+msgid "high"
+msgstr "alta"
+
+msgid "none"
+msgstr "nessuna"
+
+msgid "Transitions need PicAniCockpit"
+msgstr "Le transizioni richiedono PicAniCockpit"
 
 msgid "Infobar/Play"
 msgstr ""

@@ -15,10 +15,8 @@ class Display():
         self.csel["lcd_title"] = StaticText()
 
     def displayLCD(self, title, info):
-        # logger.debug("title: %s, info: %s", title, info)
         self.csel["lcd_title"].setText(title)
         self.csel["lcd_info"].setText(info)
 
     def displayOSD(self, info):
-        # logger.debug("info: %s", info)
         self.csel["osd_info"].setText(_("MediaCockpit") + " - " + info)

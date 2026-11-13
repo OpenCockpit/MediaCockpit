@@ -3,6 +3,7 @@
 
 
 import os
+import shutil
 from datetime import datetime
 from enigma import eConsoleAppContainer
 from Screens.Screen import Screen
@@ -17,10 +18,15 @@ from .Debug import logger
 from .FileManagerUtils import MDC_IDX_PATH, MDC_IDX_MEDIA, MDC_IDX_DATE
 from .FileManagerUtils import MDC_MEDIA_TYPE_UP, MDC_MEDIA_TYPE_DIR, MDC_MEDIA_TYPE_PLAYLIST, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE, MDC_MEDIA_TYPE_MUSIC
 from .PictureUtils import getExifData
+from .FileUtils import deleteFile
 from .SkinUtils import getSkinPath
 from .FileListUtils import nextIndex, previousIndex
 from .MediaCockpitSummary import MediaCockpitSummary
 from .Display import Display
+
+
+GRAB_SRC_LINK = "/tmp/mediacockpit_grab_src"   # symlink to the movie, see grabThumbnail()
+GRAB_TMP = "/tmp/mediacockpit_grab.jpg"        # the grabbed frame (a few KB)
 
 
 class MediaInfo(Screen, HelpableScreen, Display):
@@ -92,20 +98,57 @@ class MediaInfo(Screen, HelpableScreen, Display):
         self.fillList()
 
     def exit(self):
+        if self.container.running():
+            # no callback into a closed screen
+            self.container.appClosed.remove(self.grabThumbnailCallback)
+            self.container.kill()
+            self.removeGrabFiles()
         self.close(self.file_index)
+
+    def removeGrabFiles(self):
+        for path in (GRAB_SRC_LINK, GRAB_TMP):
+            if os.path.lexists(path):
+                deleteFile(path)
 
     def grabThumbnail(self):
         if self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MOVIE and not self.container.running():
             self["key_blue"].hide()
             filename = os.path.splitext(self.file[MDC_IDX_PATH])[0]
             self.thumbnail = filename + ".thumbnail.jpg"
-            cmd = f"ffmpeg -v quiet -i '{self.file[MDC_IDX_PATH]}' -ss {0.5} -vf scale=320:-1 -vframes 1 '{self.thumbnail}' -y"
+            # enigma2 splits the command line itself and cannot escape a quote inside quotes, so a file name with an apostrophe
+            # (or a space, if it were not quoted) cannot be passed. ffmpeg reads and writes names of our own instead.
+            self.removeGrabFiles()
+            try:
+                os.symlink(self.file[MDC_IDX_PATH], GRAB_SRC_LINK)
+            except OSError as e:
+                logger.error("cannot link %s: %s", self.file[MDC_IDX_PATH], e)
+                self["key_blue"].show()
+                return
+            cmd = f"ffmpeg -v quiet -i {GRAB_SRC_LINK} -ss 0.5 -vf scale=320:-1 -vframes 1 {GRAB_TMP} -y"
             self.container.execute(cmd)
 
     def grabThumbnailCallback(self, retval):
-        self["key_blue"].show()
-        if retval == 0 and os.path.exists(self.thumbnail):
-            self.showThumbnail(self.thumbnail)
+        thumbnail = self.thumbnail
+        stored = False
+        if retval == 0 and os.path.exists(GRAB_TMP) and os.path.getsize(GRAB_TMP) > 0:
+            # copy next to the movie under a temporary name and rename, so a half copied file is never taken as a thumbnail
+            tmp = thumbnail + ".tmp"
+            try:
+                shutil.copyfile(GRAB_TMP, tmp)
+                os.replace(tmp, thumbnail)
+                stored = True
+            except OSError as e:
+                logger.error("cannot store %s: %s", thumbnail, e)
+                deleteFile(tmp)
+        else:
+            logger.info("no thumbnail grabbed, retval: %s", retval)
+        self.removeGrabFiles()
+        # the user may have moved on to another entry while ffmpeg was running
+        is_current = self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MOVIE and thumbnail == os.path.splitext(self.file[MDC_IDX_PATH])[0] + ".thumbnail.jpg"
+        if is_current:
+            self["key_blue"].show()
+            if stored:
+                self.showThumbnail(thumbnail)
 
     def fillList(self):
         self.file = self.file_list[self.file_index]

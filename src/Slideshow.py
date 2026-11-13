@@ -3,8 +3,6 @@
 
 
 import os
-from random import shuffle
-from urllib.parse import quote
 from Screens.HelpMenu import HelpableScreen
 from Screens.Screen import Screen
 from Screens.MessageBox import MessageBox
@@ -16,11 +14,12 @@ from Components.Pixmap import Pixmap
 from Components.Button import Button
 from Components.config import config
 try:
-    from Components.MerlinPictureViewerWidget import MerlinPictureViewer
-    merlin_picture_viewer = True
-except ImportError as e:
+    from Plugins.SystemPlugins.PicAniCockpit import available as picAniAvailable
+    from Plugins.SystemPlugins.PicAniCockpit.TransitionViewer import TransitionViewer
+    picani_viewer = True
+except Exception as e:  # noqa: BLE001 - optional package, the slideshow must work without it
     print(f"MDC: optional module not installed: {e}")
-    merlin_picture_viewer = False
+    picani_viewer = False
 from Plugins.SystemPlugins.CacheCockpit.FileManager import FileManager
 from enigma import ePoint, eSize, eTimer, getDesktop, gPixmapPtr
 from skin import colors as colorNames
@@ -30,25 +29,18 @@ from .Debug import logger
 from .PictureUtils import getPicturePath, rotatePicture, setExifOrientation
 from .FileManagerUtils import MDC_IDX_MEDIA, MDC_IDX_PATH, MDC_IDX_META
 from .FileManagerUtils import MDC_MEDIA_TYPE_FILE, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE
-from .SkinUtils import getSkinPath
 from .MediaInfo import MediaInfo
 from .DelayTimer import DelayTimer
 from .FileUtils import deleteFile
-from .ConsoleAppContainer import ConsoleAppContainer
+from .SlideshowPlayers import VideoPlayer, MusicPlayer
 from .FileListUtils import previousIndex, nextIndex, findMediaIndex, getPath
-from .ConfigInit import int_slideshow_animations, ext_slideshow_animations
+from .ConfigInit import pic_slideshow_animations
 from .Thumbnail import Thumbnail
 from .Display import Display
 from .Version import ID
 
 TOAST_ID = "MDC_toast"
 TOAST_TIMEOUT = 5
-
-
-def fileUri(path):
-    """file:// URI of path. Percent-encoded, so no space, quote, # or % can break the single-quoted command line (enigma2
-    splits the command on spaces itself and cannot escape a quote inside quotes)."""
-    return "file://" + quote(path)
 
 
 def showToast(text, timeout=TOAST_TIMEOUT):
@@ -102,35 +94,31 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         self["picture_background"] = Label()
         self["picture"] = Pixmap()
 
-        if not merlin_picture_viewer:
-            self["image"] = Pixmap()
-            self.slideshow_animations = int_slideshow_animations
-            self.animation = int(int_slideshow_animations[0][0])
-            self.external_slideshow = False
-        else:
-            self["image"] = MerlinPictureViewer()
+        # PicAniCockpit plays the transitions. It is only used when its native module loaded and passed its self-test
+        # (available()); otherwise the pictures are simply cut in. The skin has an "image" widget in any case.
+        self.picani = picani_viewer and picAniAvailable()
+        logger.info("PicAniCockpit: %s", "available" if self.picani else "not available")
+        if self.picani:
+            self["image"] = TransitionViewer()
             self["image"].connectImageChanged(self.imageChanged)
-            self.slideshow_animations = ext_slideshow_animations
-            self.animation = int(ext_slideshow_animations[0][0])
-            self.external_slideshow = True
+        else:
+            self["image"] = Pixmap()
+        self.slideshow_animations = pic_slideshow_animations
+        self.animation = int(pic_slideshow_animations[0][0])
 
         self.file_list = file_list
         self.file_index = file_index
         self.file = None
         self.song_list = song_list if song_list is not None else []
-        self.song_index = 0
-        self.song_index_list = list(range(len(self.song_list)))
         self.direction = True
         self.desktop_size = getDesktop(0).size()
         self.slide_timer = eTimer()
         self.slide_timer.callback.append(self.nextSlide)
         self.show_timer = None      # DelayTimer of the slide that is about to be shown
-        self.video_failures = 0     # videos in a row that ended with an error
-        self.song_failures = 0
+        self.manual_navigation = False  # the slide about to be shown was selected with a key, not by the slideshow timer
 
-        self.video_container = ConsoleAppContainer(self.showVideoCallback)
-        self.audio_container = ConsoleAppContainer(self.playSongCallback)
-        self.black_container = ConsoleAppContainer(self.blackScreenCallback)
+        self.video = VideoPlayer(self.showVideoCallback, with_music=bool(self.song_list))
+        self.music = MusicPlayer(self.song_list)
 
         for animation in self.slideshow_animations:
             if animation[0] == config.plugins.mediacockpit.animation.value:
@@ -188,19 +176,18 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
                 self.background_color)
             self["picture_background"].instance.invalidate()
             self.slideshow_duration = config.plugins.mediacockpit.slideshow_duration.value * 1000
-            if self.external_slideshow:
-                self["image"].scaleToScreen(True)
+            if self.picani:
+                self["image"].setTransitionDuration(int(config.plugins.mediacockpit.transition_duration.value))
+                self["image"].setQuality(config.plugins.mediacockpit.transition_quality.value)
+                self["image"].setBackground(self.background_color)
+                self["image"].setKenBurns(config.plugins.mediacockpit.kenburns.value, self.slideshow_duration)
             self.setSlideshowAnimation(self.animation)
             if self.start_slideshow:
                 self["image"].show()
                 self.start_slideshow = False
                 if self.song_list:
                     self["image"].hide()
-                    shuffle(self.song_index_list)
-                    self.playSong(
-                        self.song_list[self.song_index_list[self.song_index]])
-                    logger.debug("song_index: %s, song_list: %s",
-                                 self.song_index, self.song_list)
+                    self.music.start()
                 self.playpause()
             else:
                 self["image"].hide()
@@ -211,23 +198,10 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
 
     def setSlideshowAnimation(self, animation):
         logger.debug("animation: %s", animation)
-        for slideshow_animation in self.slideshow_animations:
-            if slideshow_animation[0] == str(animation):
-                if self.external_slideshow:
-                    logger.debug("external: %s", str(animation))
-                    self["image"].setTransitionMode(animation)
-                else:
-                    logger.debug("internal: %s", str(animation))
-                    if hasattr(self["picture"].instance, "setShowHideAnimation"):
-                        self["picture"].instance.setShowHideAnimation(
-                            str(animation))
-                        self["picture"].instance.invalidate()
-                    else:
-                        logger.debug("ePixmap has no setShowHideAnimation - skipping")
-                break
+        if self.picani and str(animation) in [a[0] for a in self.slideshow_animations]:
+            self["image"].setTransitionMode(animation)
 
     def showLCDInfo(self):
-        # logger.info("file_index: %s, len(file_list): %s, slideshow_active: %s", self.file_index, len(self.file_list), self.slideshow_active)
         path = self.file[MDC_IDX_PATH]
         adir = os.path.basename(os.path.dirname(path))
         direction = "> " if self.direction else "< "
@@ -275,8 +249,13 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
                 self.file_index, len(self.file_list))
         logger.info("***************   %s   ******************",
                     self.file_index)
-        self.file = self.file_list[self.file_index]
-        self.show_timer = DelayTimer(500, self.showSlide)
+        previous, self.file = self.file, self.file_list[self.file_index]
+        # The delay lets the video player or the black frame (showiframe) finish before the next slide starts. Between two
+        # pictures with PicAniCockpit it would only stretch the hold time: the transition has been prepared long ago.
+        if self.picani and MDC_MEDIA_TYPE_MOVIE not in (previous[MDC_IDX_MEDIA], self.file[MDC_IDX_MEDIA]):
+            self.showSlide()
+        else:
+            self.show_timer = DelayTimer(500, self.showSlide)
 
     def showSlide(self):
         self.show_timer = None
@@ -284,16 +263,25 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
                     self.file_index, len(self.file_list), self.file[MDC_IDX_MEDIA])
         self.hideButtons()
         if self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PICTURE:
-            self.video_failures = 0
+            self.video.failures = 0
             self.show()
-            if self.external_slideshow and self.slideshow_active:
-                self["image"].setPicture(self.file[MDC_IDX_PATH])
-            else:
+            manual, self.manual_navigation = self.manual_navigation, False
+            path = getPicturePath(self.file[MDC_IDX_PATH])  # same file as showPicture(): a rotated copy wins
+            shown = False
+            if self.picani and self.slideshow_active:
+                self["image"].show()
+                # fast: after a key press the picture is cut in as soon as it is decoded unless it was prepared already
+                shown = self["image"].setPicture(path, self.direction, manual)
+            if not shown:
+                if self.picani:
+                    self["image"].hide()  # also forgets the old picture: the next slideshow picture is cut in, not faded from it
                 self.unhidePicture()
                 self.showPicture(self.file[MDC_IDX_PATH])
             if self.slideshow_active:
                 self.slide_timer.start(self.slideshow_duration, True)
         elif self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MOVIE:
+            if self.picani:
+                self["image"].hide()  # the video replaces the picture: the next picture must not be faded from the old one
             self.hide()
             self.showVideo(self.file[MDC_IDX_PATH])
         else:
@@ -324,24 +312,17 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
 
     def showVideo(self, filename):
         logger.info("filename: %s", filename)
-        if self.video_container.running():
+        if self.video.running():
             logger.debug("already playing")
             return
         self["picture"].instance.setPixmap(gPixmapPtr())
-        cmd = f"gst-launch-1.0 playbin -v uri='{fileUri(filename)}'"
-        if self.song_list:
-            cmd += ' flags=0x51'
-        logger.debug("cmd: %s", cmd)
-        self.video_container.execute(cmd)
+        self.video.play(filename)
 
     def showVideoCallback(self):
         """The video ended on its own (a stopped or skipped one never gets here)."""
-        failed = self.video_container.ret_val != 0
-        logger.debug("slideshow_active: %s, ret_val: %s, runtime: %.1f", self.slideshow_active,
-                     self.video_container.ret_val, self.video_container.runtime)
-        self.video_failures = self.video_failures + 1 if failed else 0
+        logger.debug("slideshow_active: %s, failures: %s", self.slideshow_active, self.video.failures)
         if self.slideshow_active:
-            if self.video_failures >= len(self.file_list):
+            if self.video.failures >= len(self.file_list):
                 # every slide failed in a row: carrying on would spin forever
                 self.endSlideshow(_("Video cannot be played"))
                 return
@@ -355,27 +336,18 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
     def stopVideo(self):
         if self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MOVIE:
             logger.debug("media: %s", self.file[MDC_IDX_MEDIA])
-            self.video_container.kill()
-            self.blackScreen()
-
-    def blackScreen(self):
-        logger.info("...")
-        filename = getSkinPath("images/black.mvi")
-        cmd = f"showiframe {filename}"
-        logger.debug("cmd: %s", cmd)
-        self.black_container.execute(cmd)
-
-    def blackScreenCallback(self):
-        logger.info("...")
+            self.video.stop()
 
 # external slideshow
 
     def toggleTransitionMode(self):
-        max_animations = len(ext_slideshow_animations) if self.external_slideshow else len(
-            ext_slideshow_animations) + len(int_slideshow_animations)
-        self.animation = (self.animation + 1) % max_animations
-        self.animation = int(self.slideshow_animations[0][0]) if self.animation < int(
-            self.slideshow_animations[0][0]) else self.animation
+        if not self.picani:
+            showToast(_("Transitions need PicAniCockpit"))
+            return
+        # next entry of the list of the engine in use (the ids of PicAniCockpit are not consecutive)
+        ids = [animation[0] for animation in self.slideshow_animations]
+        index = ids.index(str(self.animation)) if str(self.animation) in ids else -1
+        self.animation = int(ids[(index + 1) % len(ids)])
         logger.debug("animation: %s", self.animation)
         self.setSlideshowAnimation(self.animation)
 
@@ -389,42 +361,42 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
     def imageChanged(self):
         logger.debug("...")
         self.hidePicture()
+        if self.picani and self.slideshow_active:
+            self.prepareNext()
 
-# song functions
-
-    def playSong(self, afile):
-        logger.info("song_index: %s, afile: %s", self.song_index, afile)
-        cmd = f"gst-launch-1.0 playbin uri='{fileUri(afile[MDC_IDX_PATH])}'"
-        logger.debug("cmd: %s", cmd)
-        self.audio_container.execute(cmd)
-
-    def playSongCallback(self):
-        logger.debug("ret_val: %s", self.audio_container.ret_val)
-        self.song_failures = self.song_failures + 1 if self.audio_container.ret_val != 0 else 0
-        if self.song_failures >= len(self.song_list):
-            logger.warning("no song can be played, music stopped")
-            return
-        self.song_index = (self.song_index + 1) % len(self.song_list)
-        self.playSong(self.song_list[self.song_index_list[self.song_index]])
-
-    def stopSong(self):
-        logger.info("...")
-        self.audio_container.kill()
+    def prepareNext(self):
+        """PicAniCockpit decodes and bakes the next picture during the hold time, so its transition starts at once. This is
+        called when a transition has finished: a running one owns the layers."""
+        loop = config.plugins.mediacockpit.slideshow_loop.value
+        index = self.file_index
+        for _i in range(len(self.file_list)):
+            if not loop and index == (len(self.file_list) - 1 if self.direction else 0):
+                return
+            index = nextIndex(index, len(self.file_list)) if self.direction else previousIndex(index, len(self.file_list))
+            afile = self.file_list[index]
+            if afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PICTURE:
+                self["image"].prepare(getPicturePath(afile[MDC_IDX_PATH]), self.direction)
+                return
+            if afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MOVIE:
+                return  # a video comes next: nothing to prepare
 
 # picture functions
 
-    def rotatePicture(self):
-        logger.debug("file_index: %s", self.file_index)
-        path = self.file[MDC_IDX_PATH]
+    def rotatePicture(self, afile):
+        logger.debug("afile: %s", afile)
+        path = afile[MDC_IDX_PATH]
         filename, ext = os.path.splitext(path)
         out_file = in_file = filename + ".transformed" + ext
         if not os.path.exists(in_file):
             in_file = path
-        rc = rotatePicture(in_file, out_file, 90)
+        # clockwise, like the EXIF orientation sequence below (1 -> 6 -> 3 -> 8 -> 1): the rotated copy and the orientation
+        # written to the original must show the same thing, otherwise the running slideshow (which decodes the original and
+        # applies EXIF) turns the picture the other way than this screen does
+        rc = rotatePicture(in_file, out_file, -90)
         if rc:
             self.createThumbnail(path, True)
 
-            orientation = self.file[MDC_IDX_META]["Orientation"]
+            orientation = afile[MDC_IDX_META]["Orientation"]
             new_orientation = orientation  # Default to current orientation
             if orientation == 1:
                 new_orientation = 6
@@ -441,7 +413,15 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
             if new_orientation == 1:
                 deleteFile(out_file)
 
-        self.showPicture(path)
+        if afile is self.file:  # the slideshow may have moved on while the picture was being rotated
+            if self.picani and self.slideshow_active:
+                # the viewer still shows the old picture: forget it and cut the rotated one in (no transition)
+                self["image"].hide()
+                self["image"].show()
+                if self["image"].setPicture(getPicturePath(path), self.direction, True):
+                    return
+                self.unhidePicture()
+            self.showPicture(path)
 
 # key functions
 
@@ -449,9 +429,10 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         self.slide_timer.stop()
         DelayTimer.stopAll()
         self.stopVideo()
-        self.stopSong()
-        config.plugins.mediacockpit.animation.value = str(self.animation)
-        config.plugins.mediacockpit.animation.save()
+        self.music.stop()
+        if self.picani:  # without it the list holds only a placeholder, which must not replace the saved choice
+            config.plugins.mediacockpit.animation.value = str(self.animation)
+            config.plugins.mediacockpit.animation.save()
         path = self.file[MDC_IDX_PATH]
         logger.debug("file_index: %s, path: %s", self.file_index, path)
         self.close(path)
@@ -459,14 +440,17 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
     def yellow(self):
         if self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PICTURE:
             showToast(_("Rotating picture..."))
-            self.rotatePicture()
+            # rotating blocks the main loop for a while: give the toast a chance to be painted first
+            DelayTimer(100, self.rotatePicture, self.file)
 
     def right(self):
         self.direction = True
+        self.manual_navigation = True
         self.nextSlide()
 
     def left(self):
         self.direction = False
+        self.manual_navigation = True
         self.nextSlide()
 
     def stop(self):
@@ -491,6 +475,10 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
             self.stopVideo()
             self.showLCDInfo()
             self["image"].hide()
+            if self.picani and self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PICTURE:
+                # the viewer's picture is gone with hide(), and imageChanged() had hidden the plain picture widget
+                self.unhidePicture()
+                self.showPicture(self.file[MDC_IDX_PATH])
 
     def openInfo(self):
         if not self.slideshow_active and self.file[MDC_IDX_MEDIA] in MDC_MEDIA_TYPE_FILE:

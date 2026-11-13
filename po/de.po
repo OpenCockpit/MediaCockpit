@@ -85,54 +85,6 @@ msgstr "Alphabetisch aufwärts"
 msgid "Alpha sort down"
 msgstr "Alphabetisch abwärts"
 
-msgid "blinds"
-msgstr "Jalousie"
-
-msgid "rotate"
-msgstr "Rotation"
-
-msgid "circular waves"
-msgstr "Kreiswellen"
-
-msgid "door"
-msgstr "Tor"
-
-msgid "dice"
-msgstr "Würfel"
-
-msgid "checkerboard"
-msgstr "Schachbrett"
-
-msgid "shutter"
-msgstr "Blende"
-
-msgid "waves"
-msgstr "Wellen"
-
-msgid "windmill"
-msgstr "Windmühle"
-
-msgid "earthquake"
-msgstr "Erdbeben"
-
-msgid "crossfade"
-msgstr "Überblenden"
-
-msgid "random"
-msgstr "Zufall"
-
-msgid "Crossfade fast"
-msgstr "Überblenden schnell"
-
-msgid "Crossfade slow"
-msgstr "Überblenden langsam"
-
-msgid "Crossfade accelerated"
-msgstr "Überblenden beschleunigt"
-
-msgid "Crossfade regular"
-msgstr "Überblenden normal"
-
 msgid "default"
 msgstr "Standard"
 
@@ -463,6 +415,21 @@ msgstr "Ende der Diashow"
 msgid "Video cannot be played"
 msgstr "Das Video kann nicht abgespielt werden"
 
+msgid "low"
+msgstr "niedrig"
+
+msgid "normal"
+msgstr "normal"
+
+msgid "high"
+msgstr "hoch"
+
+msgid "none"
+msgstr "keine"
+
+msgid "Transitions need PicAniCockpit"
+msgstr "Übergänge benötigen PicAniCockpit"
+
 msgid "Log level"
 msgstr "Debug Log-Stufe"
 
@@ -492,6 +459,24 @@ msgstr "In welcher Farbe soll der Vordergrund für Media Icons angezeigt werden?
 
 msgid "Which animation should be used for slide transitions?"
 msgstr "Welche Animation soll für Diaübergänge verwendet werden?"
+
+msgid "Transition duration"
+msgstr "Übergangsdauer"
+
+msgid "Select the duration of the transition between two slides (PicAniCockpit)."
+msgstr "Wähle die Dauer des Übergangs zwischen zwei Bildern (PicAniCockpit)."
+
+msgid "Transition quality"
+msgstr "Übergangsqualität"
+
+msgid "Select the transition quality. A higher quality needs more memory and preparation time (PicAniCockpit)."
+msgstr "Wähle die Qualität des Übergangs. Eine höhere Qualität benötigt mehr Speicher und Vorbereitungszeit (PicAniCockpit)."
+
+msgid "Ken Burns effect"
+msgstr "Ken-Burns-Effekt"
+
+msgid "Should pictures slowly zoom while they are shown (PicAniCockpit)?"
+msgstr "Sollen Bilder während der Anzeige langsam zoomen (PicAniCockpit)?"
 
 msgid "Plugin"
 msgstr "Plugin"

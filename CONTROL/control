@@ -2,4 +2,4 @@ Description: MediaCockpit
 Maintainer: xcentaurix
 Package: enigma2-plugin-extensions-mediacockpit
 Architecture: all
-Depends: python3-pillow, python3-twisted, python3-mutagen, ffmpeg, enigma2-plugin-systemplugins-mountcockpit, enigma2-plugin-skincomponents-componentscockpit, enigma2-plugin-systemplugins-cachecockpit, enigma2-plugin-systemplugins-fontscockpit, enigma2-plugin-systemplugins-picanicockpit
+Depends: python3-pillow, ffmpeg, enigma2-plugin-systemplugins-mountcockpit, enigma2-plugin-skincomponents-componentscockpit, enigma2-plugin-systemplugins-cachecockpit, enigma2-plugin-systemplugins-fontscockpit, enigma2-plugin-systemplugins-picanicockpit

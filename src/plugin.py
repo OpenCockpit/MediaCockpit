@@ -25,7 +25,6 @@ def autoStart(reason, **kwargs):
     if reason == 0:  # startup
         if "session" in kwargs:
             logger.info("+++ Version: %s starts...", VERSION)
-            # session = kwargs["session"]
             MountCockpit.getInstance().registerBookmarks(
                 ID, config.plugins.mediacockpit.bookmarks.value)
     elif reason == 1:  # shutdown

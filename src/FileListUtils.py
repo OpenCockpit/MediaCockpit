@@ -4,8 +4,7 @@
 
 import os
 import json
-from six import text_type
-from six.moves.urllib.parse import unquote
+from urllib.parse import unquote
 from Components.config import config
 from Plugins.SystemPlugins.CacheCockpit.FileManager import FileManager
 from .Debug import logger
@@ -68,7 +67,7 @@ def getFile(file_list, value):
     if file_list:
         if isinstance(value, int):
             afile = file_list[value]
-        elif isinstance(value, text_type):
+        elif isinstance(value, str):
             afile = file_list[getIndex(file_list, value)]
     return afile
 

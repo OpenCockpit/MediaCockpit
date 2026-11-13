@@ -3,6 +3,7 @@
 
 
 import os
+import glob
 from Screens.Screen import Screen
 from Screens.HelpMenu import HelpableScreen
 from Screens.LocationBox import LocationBox
@@ -21,7 +22,7 @@ from .FileManagerUtils import FILE_OP_LOAD
 from .FileManagerUtils import MDC_IDX_MEDIA, MDC_IDX_PATH, MDC_IDX_TYPE, MDC_IDX_BOOKMARK
 from .FileManagerUtils import MDC_TYPE_FILE, MDC_MEDIA_TYPE_FILE, MDC_MEDIA_TYPE_UP, MDC_MEDIA_TYPE_DIR, MDC_MEDIA_TYPE_PLAYLIST, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE
 from .FileListUtils import getFile, getDir, getPath, getIndex, nextIndex, findMediaIndex, splitMediaSongList, scanPlaylistFiles
-from .FileUtils import deleteFiles
+from .FileUtils import deleteFile, deleteFiles
 from .MediaInfo import MediaInfo
 from .Tiles import Tiles
 from .Slideshow import Slideshow
@@ -286,10 +287,17 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         if answer:
             afile = getFile(self.file_list, self.file_index)
             path = afile[MDC_IDX_PATH]
-            filename = os.path.splitext(path)[0]
+            filename, ext = os.path.splitext(path)
             logger.debug("filename: %s", filename)
-            deleteFiles(filename + ".*")
+            if afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PICTURE:
+                # only the picture and its own derived files: IMG_1.* would also take IMG_1.CR2 or IMG_1.mp4 with it
+                for sidecar in (path, filename + ".thumbnail" + ext, filename + ".thumbnail.jpg", filename + ".transformed" + ext):
+                    deleteFile(sidecar)
+            else:
+                # recordings have many files with the same stem (.ts.cuts, .eit, .srt, ...)
+                deleteFiles(glob.escape(filename) + ".*")
             del self.file_list[self.file_index]
+            self.media_list, self.song_list = splitMediaSongList(self.file_list)  # the slideshow must not see the deleted file
             FileManager.getInstance(ID).delete(path)
             if not self.file_index < len(self.file_list):
                 self.file_index -= 1

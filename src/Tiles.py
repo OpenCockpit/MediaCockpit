@@ -7,7 +7,7 @@ import os
 from Components.Label import Label
 from Components.Pixmap import Pixmap
 from Components.config import config
-from enigma import eSize, ePoint, gFont
+from enigma import eSize, ePoint, eTimer, gFont
 from enigma import BT_SCALE, BT_HALIGN_CENTER, BT_VALIGN_CENTER, BT_KEEP_ASPECT_RATIO
 from Tools.LoadPixmap import LoadPixmap
 from Plugins.SystemPlugins.MountCockpit.MountCockpit import MountCockpit
@@ -18,6 +18,7 @@ from .__init__ import _
 from .FileManagerUtils import MDC_IDX_MEDIA, MDC_IDX_PATH
 from .FileManagerUtils import MDC_MEDIA_TYPE_FILE, MDC_MEDIA_TYPE_UP, MDC_MEDIA_TYPE_DIR, MDC_MEDIA_TYPE_PLAYLIST, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE, MDC_MEDIA_TYPE_MUSIC
 from .FileListUtils import getDir
+from .PictureUtils import createThumbnail
 from .Display import Display
 from .Version import ID
 
@@ -45,7 +46,13 @@ class Tiles(Display):
         self.icons = {}
         self.last_tile_pos = -1
         self.is_mounted = False
+        self.thumbnail_size = eSize(0, 0)
+        self.thumbnail_todo = []        # file indexes of the visible page whose thumbnail is still missing
+        self.thumbnail_failed = set()   # pictures that could not be turned into a thumbnail: not tried again
+        self.thumbnail_timer = eTimer()
+        self.thumbnail_timer.callback.append(self.createNextThumbnail)
         self.onShow.append(self.initTileAttribs)
+        self.onClose.append(self.thumbnail_timer.stop)
 
     def initTileConfig(self):
         self.selection_size_offset = config.plugins.mediacockpit.selection_size_offset.value
@@ -66,10 +73,12 @@ class Tiles(Display):
         self.icons = {}
         self.icon_size = self.csel["Icon0"].instance.size()
         self.thumbnail_size = self.csel["Picture0"].instance.size()
-        config.plugins.mediacockpit.thumbnail_size_width.value = self.thumbnail_size.width()
-        config.plugins.mediacockpit.thumbnail_size_width.save()
-        config.plugins.mediacockpit.thumbnail_size_height.value = self.thumbnail_size.height()
-        config.plugins.mediacockpit.thumbnail_size_height.save()
+        if self.thumbnail_size.width() > 0 and self.thumbnail_size.height() > 0:
+            # CacheCockpit creates thumbnails of this size while scanning
+            config.plugins.mediacockpit.thumbnail_size_width.value = self.thumbnail_size.width()
+            config.plugins.mediacockpit.thumbnail_size_width.save()
+            config.plugins.mediacockpit.thumbnail_size_height.value = self.thumbnail_size.height()
+            config.plugins.mediacockpit.thumbnail_size_height.save()
         self.icons[MDC_MEDIA_TYPE_PICTURE] = LoadPixmap(getSkinPath(
             "images/" + "picture.svg"), cached=True, width=self.icon_size.width(), height=self.icon_size.height())
         logger.info("...")
@@ -215,6 +224,48 @@ class Tiles(Display):
         self.selectTile(tile_pos)
         self.showInfo(self.is_mounted)
         self.onSelectionChange()
+        self.queueThumbnails(first_idx, min(last_idx, file_list_len))
+
+# missing thumbnails
+
+    @staticmethod
+    def thumbnailPath(path):
+        filename, ext = os.path.splitext(path)
+        return filename + ".thumbnail" + ext
+
+    def queueThumbnails(self, first_idx, last_idx):
+        """The scan (CacheCockpit) creates thumbnails, but pictures that were scanned before the size was known, or that came with
+        a copy of the database, have none. They are made here for the tiles on the screen, one per timer tick so that the remote
+        stays responsive."""
+        self.thumbnail_timer.stop()
+        self.thumbnail_todo = []
+        if not config.plugins.mediacockpit.create_thumbnails.value or self.thumbnail_size.width() <= 0:
+            return
+        for idx in range(first_idx, last_idx):
+            afile = self.file_list[idx]
+            path = afile[MDC_IDX_PATH]
+            if afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PICTURE and path not in self.thumbnail_failed and not os.path.exists(self.thumbnailPath(path)):
+                self.thumbnail_todo.append(idx)
+        if self.thumbnail_todo:
+            self.thumbnail_timer.start(100, True)
+
+    def createNextThumbnail(self):
+        if not self.thumbnail_todo:
+            return
+        idx = self.thumbnail_todo.pop(0)
+        try:
+            if idx < len(self.file_list):
+                path = self.file_list[idx][MDC_IDX_PATH]
+                createThumbnail(path, self.thumbnail_size)
+                if os.path.exists(self.thumbnailPath(path)):
+                    if idx // self.tiles == self.file_index // self.tiles:  # still on the screen
+                        self.paintTile(idx, idx % self.tiles)
+                else:
+                    self.thumbnail_failed.add(path)
+        except Exception as e:  # noqa: BLE001 - never let a broken picture stop the tile screen
+            logger.error("idx: %s, exception: %s", idx, e)
+        if self.thumbnail_todo:
+            self.thumbnail_timer.start(100, True)
 
     def showInfo(self, is_mounted=True):
         if self.file_list:

@@ -17,6 +17,9 @@
 		<item text="Create thumbnails" description="Should thumbnails be created automatically?">config.plugins.mediacockpit.create_thumbnails</item>
 		<item text="Slideshow duration" description="Select the duration for the display of a slide.">config.plugins.mediacockpit.slideshow_duration</item>
 		<item text="Slideshow animation" description="Which animation should be used for slide transitions?">config.plugins.mediacockpit.animation</item>
+		<item text="Transition duration" description="Select the duration of the transition between two slides (PicAniCockpit).">config.plugins.mediacockpit.transition_duration</item>
+		<item text="Transition quality" description="Select the transition quality. A higher quality needs more memory and preparation time (PicAniCockpit).">config.plugins.mediacockpit.transition_quality</item>
+		<item text="Ken Burns effect" description="Should pictures slowly zoom while they are shown (PicAniCockpit)?">config.plugins.mediacockpit.kenburns</item>
 		<item text="Slideshow endless loop" description="Should slideshows be run in an endless loop?">config.plugins.mediacockpit.slideshow_loop</item>
 		<item text="Recurse directories" description="Should directories be loaded recursively?">config.plugins.mediacockpit.recurse_dirs</item>
 		<item text="Picture foreground color" description="Select the foreground color of icons.">config.plugins.mediacockpit.picture_foreground</item>
