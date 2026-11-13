@@ -21,8 +21,6 @@
 		<item text="Transition quality" description="Select the transition quality. A higher quality needs more memory and preparation time (PicAniCockpit).">config.plugins.mediacockpit.transition_quality</item>
 		<item text="Ken Burns effect" description="Should pictures slowly zoom while they are shown (PicAniCockpit)?">config.plugins.mediacockpit.kenburns</item>
 		<item text="Slideshow endless loop" description="Should slideshows be run in an endless loop?">config.plugins.mediacockpit.slideshow_loop</item>
-		<item text="Recurse directories" description="Should directories be loaded recursively?">config.plugins.mediacockpit.recurse_dirs</item>
-		<item text="Picture foreground color" description="Select the foreground color of icons.">config.plugins.mediacockpit.picture_foreground</item>
 		<item text="Picture background color" description="Select the background color for icons.">config.plugins.mediacockpit.picture_background</item>
 		<item level="1" text="Resume video at last position" description="Select whether video should be resumed at last stop position.">config.plugins.mediacockpit.movie_resume_at_last_pos</item>
 		<item level="1" text="Video start at" description="Select at which position video is started at.">config.plugins.mediacockpit.movie_start_position</item>

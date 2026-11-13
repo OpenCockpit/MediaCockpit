@@ -5,7 +5,6 @@
 import os
 from Screens.HelpMenu import HelpableScreen
 from Screens.Screen import Screen
-from .PixmapUtils import loadPixmap
 from Components.ActionMap import HelpableActionMap
 from Components.Label import Label
 from Components.Pixmap import Pixmap
@@ -25,17 +24,18 @@ from .__init__ import _
 from .MediaCockpitSummary import MediaCockpitSummary
 from .Debug import logger
 from .PictureUtils import getPicturePath, rotatePicture, setExifOrientation
+from .PixmapUtils import loadPixmap
 from .FileManagerUtils import MDC_IDX_MEDIA, MDC_IDX_PATH, MDC_IDX_META
 from .FileManagerUtils import MDC_MEDIA_TYPE_FILE, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE
 from .MediaInfo import MediaInfo
 from .DelayTimer import DelayTimer
 from .FileUtils import deleteFile
-from .SlideshowPlayers import VideoPlayer, MusicPlayer
+from .SlideshowPlayers import ServicePlayer, BackgroundMusic
 from .FileListUtils import previousIndex, nextIndex, findMediaIndex, getPath
 from .ConfigInit import pic_slideshow_animations
 from .Thumbnail import Thumbnail
 from .Display import Display
-from .Version import ID
+from .Version import ID, PLUGIN
 
 TOAST_TIMEOUT = 3
 
@@ -52,8 +52,7 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         self["key_green"] = Button(_("Slideshow"))
         self["key_yellow"] = Button(_("Rotate picture"))
         self["key_blue"] = Button(_("Toggle Transition"))
-        self["bar_background"] = Label()
-        self["bar_separator"] = Label()
+        self["body"] = Label()      # the place of the picture while the buttons are shown (its rectangle is set by the skin)
         # A short message inside the screen. Tools.Notifications popups are only shown by the InfoBar, i.e. never while this
         # screen is open: they would queue up and appear after leaving the slideshow.
         self["toast"] = Label()
@@ -65,6 +64,7 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         Screen.__init__(self, session)
         HelpableScreen.__init__(self)
         self.skinName = self.__class__.__name__
+        self.setTitle(PLUGIN)       # the header of the window, visible while the buttons are shown
         self["actions"] = HelpableActionMap(
             self,
             "CockpitActions",
@@ -112,8 +112,10 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         self.show_timer = None      # DelayTimer of the slide that is about to be shown
         self.manual_navigation = False  # the slide about to be shown was selected with a key, not by the slideshow timer
 
-        self.video = VideoPlayer(self.showVideoCallback, with_music=bool(self.song_list))
-        self.music = MusicPlayer(self.song_list)
+        # enigma2 plays the videos, with their sound, and the background music. Only one service plays at a time: the music is
+        # suspended while a movie plays and goes on after it.
+        self.video = ServicePlayer(self, self.showVideoCallback)
+        self.music = BackgroundMusic(self, self.song_list)
 
         for animation in self.slideshow_animations:
             if animation[0] == config.plugins.mediacockpit.animation.value:
@@ -135,20 +137,17 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         return MediaCockpitSummary
 
     def showButtons(self):
+        """The picture moves into the body of the window, the header and the footer with the keys become visible.
+
+        The key buttons are never hidden: the footer bar draws the buttons that are visible when the screen is shown and does not
+        look again when one is shown or hidden later, so buttons hidden at that time (the screen starts without the window) would
+        leave the bar empty for good. While the picture covers the screen the bar is covered with it."""
         logger.info("...")
-        size = self["picture"].instance.size()
-        self["picture"].instance.resize(
-            eSize(size.width() * 9 // 10, size.height() * 9 // 10))
-        self["picture"].instance.move(
-            ePoint(self.desktop_size.width() // 10 // 2, self.desktop_size.height() // 10 // 4))
+        body = self["body"].instance
+        self["picture"].instance.resize(body.size())
+        self["picture"].instance.move(body.position())
         self["picture_background"].hide()
-        self["bar_background"].show()
         self["osd_info"].show()
-        self["bar_separator"].show()
-        self["key_red"].show()
-        self["key_green"].show()
-        self["key_yellow"].show()
-        self["key_blue"].show()
 
     def hideButtons(self):
         logger.info("...")
@@ -156,13 +155,7 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
             eSize(self.desktop_size.width(), self.desktop_size.height()))
         self["picture"].instance.move(ePoint(0, 0))
         self["picture_background"].show()
-        self["bar_background"].hide()
         self["osd_info"].hide()
-        self["bar_separator"].hide()
-        self["key_red"].hide()
-        self["key_green"].hide()
-        self["key_yellow"].hide()
-        self["key_blue"].hide()
 
     def toggleButtons(self):
         if self.desktop_size.width() == self["picture"].instance.size().width():
@@ -177,7 +170,6 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
             self.hideButtons()
             self.file = self.file_list[self.file_index]
             self.background_color = colorNames[config.plugins.mediacockpit.picture_background.value]
-            self.foreground_color = colorNames[config.plugins.mediacockpit.picture_foreground.value]
             self["picture_background"].instance.setBackgroundColor(
                 self.background_color)
             self["picture_background"].instance.invalidate()
@@ -215,6 +207,8 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
             direction = ""
         self.displayLCD(
             f"{direction}{self.file_index + 1}/{len(self.file_list)}", adir)
+        # the line in the header, visible while the buttons are shown
+        self.displayOSD(f"{_('Slideshow')}: {self.file_index + 1}/{len(self.file_list)} - {os.path.basename(path)}")
 
 # slide functions
 
@@ -227,6 +221,7 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         self.slideshow_active = False
         self.slide_timer.stop()
         self.cancelShow()
+        self.music.resume()     # the last slide was a movie: the music goes on until the screen is left
         if self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MOVIE:
             # the screen is hidden while a video plays: bring it back, or only a black picture would be left
             self.show()
@@ -270,6 +265,7 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         self.hideButtons()
         if self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PICTURE:
             self.video.failures = 0
+            self.music.resume()     # after a movie: the music goes on where it was interrupted
             self.show()
             manual, self.manual_navigation = self.manual_navigation, False
             path = getPicturePath(self.file[MDC_IDX_PATH])  # same file as showPicture(): a rotated copy wins
@@ -288,7 +284,13 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         elif self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MOVIE:
             if self.picani:
                 self["image"].hide()  # the video replaces the picture: the next picture must not be faded from the old one
-            self.hide()
+            if self.execing:
+                self.hide()
+            else:
+                # The first slide is started from onLayoutFinish, before the session shows the screen: a hide() now is undone by
+                # that show(), and the picture background would cover the video (black first video).
+                DelayTimer(1, self.hide)
+            self.music.suspend()    # the movie has its own sound and needs the service
             self.showVideo(self.file[MDC_IDX_PATH])
         else:
             logger.debug("skip slide: %s", self.file[MDC_IDX_MEDIA])
@@ -340,6 +342,8 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         """STOP on a video: carry on with the next slide when the slideshow runs."""
         if self.slideshow_active:
             self.nextSlide()
+        else:
+            self.music.resume()     # no next slide to bring the music back
 
     def stopVideo(self):
         if self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MOVIE:
@@ -482,6 +486,7 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         else:
             self.slide_timer.stop()
             self.stopVideo()
+            self.music.resume()     # a movie was stopped: the music goes on (no effect when none was playing)
             self.showLCDInfo()
             self["image"].hide()
             if self.picani and self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PICTURE:

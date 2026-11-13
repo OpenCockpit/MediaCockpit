@@ -1,0 +1,188 @@
+# The body of the music player in the full size window: the cover (or the music icon) on a card on the left, what is playing, the
+# position in the song and the queue on the right. Everything is placed relative to the body ($width, $height).
+- eLabel:
+    backgroundColor: "md_surface_container_high"
+    cornerRadius: "$radius_window"
+    position: "0,0"
+    size: "760,760"
+    zPosition: "1"
+- widget:
+    name: "cover"
+    position: "0,0"
+    size: "760,760"
+    zPosition: "2"
+- widget:
+    alphatest: "blend"
+    name: "icon"
+    position: "190,190"
+    size: "380,380"
+    zPosition: "3"
+# what is playing
+- widget:
+    font: "$md_headline_medium"
+    foregroundColor: "md_on_surface"
+    halign: "left"
+    name: "song_title"
+    noWrap: "1"
+    position: "800,0"
+    size: "$width-800,70"
+    transparent: "1"
+    valign: "center"
+    zPosition: "2"
+- widget:
+    font: "$md_title_large"
+    foregroundColor: "md_primary"
+    halign: "left"
+    name: "artist"
+    noWrap: "1"
+    position: "800,76"
+    size: "$width-800,48"
+    transparent: "1"
+    valign: "center"
+    zPosition: "2"
+- widget:
+    font: "$md_body_large"
+    foregroundColor: "md_on_surface_variant"
+    halign: "left"
+    name: "album"
+    noWrap: "1"
+    position: "800,130"
+    size: "$width-800,40"
+    transparent: "1"
+    valign: "center"
+    zPosition: "2"
+- widget:
+    font: "$md_body_medium"
+    foregroundColor: "md_on_surface_variant"
+    halign: "left"
+    name: "details"
+    noWrap: "1"
+    position: "800,174"
+    size: "$width-800,40"
+    transparent: "1"
+    valign: "center"
+    zPosition: "2"
+# play state, shuffle and repeat
+- widget:
+    font: "$md_body_medium"
+    foregroundColor: "md_tertiary"
+    halign: "left"
+    name: "status"
+    noWrap: "1"
+    position: "800,236"
+    size: "300,40"
+    transparent: "1"
+    valign: "center"
+    zPosition: "2"
+- widget:
+    font: "$md_body_medium"
+    foregroundColor: "md_on_surface_variant"
+    halign: "center"
+    name: "shuffle"
+    noWrap: "1"
+    position: "$width-700,236"
+    size: "330,40"
+    transparent: "1"
+    valign: "center"
+    zPosition: "2"
+- widget:
+    font: "$md_body_medium"
+    foregroundColor: "md_on_surface_variant"
+    halign: "right"
+    name: "repeat"
+    noWrap: "1"
+    position: "$width-360,236"
+    size: "360,40"
+    transparent: "1"
+    valign: "center"
+    zPosition: "2"
+# position in the song
+- eLabel:
+    backgroundColor: "md_surface_container_highest"
+    cornerRadius: "$radius_bar_thick"
+    position: "800,310"
+    size: "$width-800,12"
+    zPosition: "2"
+- widget:
+    alphatest: "blend"
+    cornerRadius: "$radius_bar_thick"
+    foregroundColor: "md_primary"
+    position: "800,310"
+    render: "Progress"
+    size: "$width-800,12"
+    source: "Service"
+    transparent: "1"
+    zPosition: "3"
+    children:
+      - convert:
+          type: "COCServicePosition"
+          text: "Position"
+- widget:
+    font: "$md_body_medium"
+    foregroundColor: "md_on_surface_variant"
+    halign: "left"
+    position: "800,330"
+    render: "Label"
+    size: "200,40"
+    source: "Service"
+    transparent: "1"
+    valign: "center"
+    zPosition: "2"
+    children:
+      - convert:
+          type: "COCServicePosition"
+          text: "Position"
+- widget:
+    font: "$md_body_medium"
+    foregroundColor: "md_on_surface_variant"
+    halign: "right"
+    position: "$width-200,330"
+    render: "Label"
+    size: "200,40"
+    source: "Service"
+    transparent: "1"
+    valign: "center"
+    zPosition: "2"
+    children:
+      - convert:
+          type: "COCServicePosition"
+          text: "Remaining,Negate"
+# what comes next, and the songs in the order they are played
+- widget:
+    font: "$md_body_medium"
+    foregroundColor: "md_on_surface_variant"
+    halign: "left"
+    name: "next_title"
+    noWrap: "1"
+    position: "800,390"
+    size: "$width-800,40"
+    transparent: "1"
+    valign: "center"
+    zPosition: "2"
+- widget:
+    backgroundColorSelected: "$backgroundColorSelected"
+    foregroundColorSelected: "$foregroundColorSelected"
+    itemCornerRadiusSelected: "$radius_item"
+    position: "800,445"
+    render: "Listbox"
+    size: "$width-800,eval(($height-445)/$list_item_height*$list_item_height)"
+    source: "list"
+    zPosition: "3"
+    children:
+      - convert:
+          type: "COCTemplatedMultiContentEx"
+          cell:
+            itemHeight: $list_item_height
+            fonts:
+              - "$md_body_large"
+            fields:
+              - text:
+                  position: "$list_indent,0"
+                  size: "70,45"
+                  flags: RT_VALIGN_CENTER
+                  value: 0
+              - text:
+                  position: "90,0"
+                  size: "$width-800-90,45"
+                  flags: RT_VALIGN_CENTER
+                  value: 1

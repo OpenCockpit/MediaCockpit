@@ -184,12 +184,6 @@ msgstr "Bildübergang"
 msgid "Should slideshows be run in an endless loop?"
 msgstr "Sollen Diashows in einer Endlosschleife laufen?"
 
-msgid "Recurse directories"
-msgstr "Lade Verzeichnisse rekursiv"
-
-msgid "Should directories be loaded recursively?"
-msgstr "Sollen Verzeichnisse rekursiv geladen werden?"
-
 msgid "Select the background color for icons."
 msgstr "In welcher Farbe soll der Hintergrund für Media Icons angezeigt werden?"
 
@@ -430,6 +424,63 @@ msgstr "keine"
 msgid "Transitions need PicAniCockpit"
 msgstr "Übergänge benötigen PicAniCockpit"
 
+msgid "Song"
+msgstr "Titel"
+
+msgid "Play selected song"
+msgstr "Ausgewählten Titel abspielen"
+
+msgid "Next song"
+msgstr "Nächster Titel"
+
+msgid "Previous song"
+msgstr "Vorheriger Titel"
+
+msgid "Toggle shuffle"
+msgstr "Zufallswiedergabe umschalten"
+
+msgid "Toggle repeat"
+msgstr "Wiederholung umschalten"
+
+msgid "Shuffle"
+msgstr "Zufall"
+
+msgid "Repeat"
+msgstr "Wiederholung"
+
+msgid "Playing"
+msgstr "Wiedergabe"
+
+msgid "Paused"
+msgstr "Pausiert"
+
+msgid "Stopped"
+msgstr "Gestoppt"
+
+msgid "Cannot play"
+msgstr "Nicht abspielbar"
+
+msgid "Next"
+msgstr "Nächster"
+
+msgid "Track"
+msgstr "Titel"
+
+msgid "on"
+msgstr "an"
+
+msgid "off"
+msgstr "aus"
+
+msgid "all"
+msgstr "alle"
+
+msgid "song"
+msgstr "Titel"
+
+msgid "Music player"
+msgstr "Musikplayer"
+
 msgid "Log level"
 msgstr "Debug Log-Stufe"
 
@@ -438,9 +489,6 @@ msgstr "Film-Datums-Format"
 
 msgid "Picture background color"
 msgstr "Bild-Hintergrundfarbe"
-
-msgid "Picture foreground color"
-msgstr "Bild-Vordergrundfarbe"
 
 msgid "Slideshow animation"
 msgstr "Diashow-Animation"
@@ -453,9 +501,6 @@ msgstr "Diashow in Endlosschleife"
 
 msgid "Select the debug log level."
 msgstr "Auswahl der Debug Log-Stufe"
-
-msgid "Select the foreground color of icons."
-msgstr "In welcher Farbe soll der Vordergrund für Media Icons angezeigt werden?"
 
 msgid "Which animation should be used for slide transitions?"
 msgstr "Welche Animation soll für Diaübergänge verwendet werden?"

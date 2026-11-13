@@ -26,7 +26,7 @@
               - "$md_body_large"
             fields:
               - text:
-                  position: "5,0"
+                  position: "0,0"
                   size: "300,45"
                   flags: RT_VALIGN_CENTER
                   value: 0

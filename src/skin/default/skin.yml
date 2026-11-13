@@ -13,6 +13,8 @@ skin:
     - xmlinc:
         file: "screen_MediaInfo.ymlinc"
     - xmlinc:
+        file: "screen_CockpitMusicPlayer.ymlinc"
+    - xmlinc:
         file: "screen_CockpitPlayer.ymlinc"
         imagepath: "/usr/lib/enigma2/python/Plugins/SystemPlugins/ComponentsCockpit/skin/images"
     - xmlinc:

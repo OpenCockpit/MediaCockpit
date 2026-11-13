@@ -116,13 +116,10 @@ config.plugins.mediacockpit.transition_duration = ConfigSelection(
 config.plugins.mediacockpit.transition_quality = ConfigSelection(
     default="normal", choices=[("low", _("low")), ("normal", _("normal")), ("high", _("high"))])
 config.plugins.mediacockpit.kenburns = ConfigYesNo(default=False)
-config.plugins.mediacockpit.recurse_dirs = ConfigYesNo(default=True)
 config.plugins.mediacockpit.sort_across_dirs = ConfigYesNo(
     default=False)
 config.plugins.mediacockpit.picture_background = ConfigSelection(
     default="black", choices=choices_color)
-config.plugins.mediacockpit.picture_foreground = ConfigSelection(
-    default="foreground", choices=choices_color)
 config.plugins.mediacockpit.database_directory = ConfigDirectory(
     default="/etc/enigma2")
 config.plugins.mediacockpit.movie_resume_at_last_pos = ConfigYesNo(

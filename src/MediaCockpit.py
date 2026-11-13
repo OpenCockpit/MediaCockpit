@@ -20,13 +20,14 @@ from .Version import ID, PLUGIN
 from .Debug import logger
 from .FileManagerUtils import FILE_OP_LOAD
 from .FileManagerUtils import MDC_IDX_MEDIA, MDC_IDX_PATH, MDC_IDX_TYPE, MDC_IDX_BOOKMARK
-from .FileManagerUtils import MDC_TYPE_FILE, MDC_MEDIA_TYPE_FILE, MDC_MEDIA_TYPE_UP, MDC_MEDIA_TYPE_DIR, MDC_MEDIA_TYPE_PLAYLIST, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE
+from .FileManagerUtils import MDC_TYPE_FILE, MDC_MEDIA_TYPE_FILE, MDC_MEDIA_TYPE_UP, MDC_MEDIA_TYPE_DIR, MDC_MEDIA_TYPE_PLAYLIST, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE, MDC_MEDIA_TYPE_MUSIC
 from .FileListUtils import getFile, getDir, getPath, getIndex, nextIndex, findMediaIndex, splitMediaSongList, scanPlaylistFiles
 from .FileUtils import deleteFile, deleteFiles
 from .MediaInfo import MediaInfo
 from .Tiles import Tiles
 from .Slideshow import Slideshow
 from .CockpitPlayer import CockpitPlayer
+from .CockpitMusicPlayer import CockpitMusicPlayer
 from .ServiceUtils import getService
 from .ServiceCenter import ServiceCenter
 from .FileListUtils import createBookmarkEntries, createParentDirEntry, sortList
@@ -60,6 +61,7 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         self.service_center = ServiceCenter()
         self.return_dir = ""
         self.return_path = ""
+        self.return_entry = ""      # the entry of a playlist that has the cursor when the playlist is restored
 
         self["key_red"] = Button(_("Delete file"))
         self["key_green"] = Button(_("Home"))
@@ -146,18 +148,27 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
             self.first_start = False
         elif self.return_dir in self.bookmarks and self.return_path == self.return_dir:
             self.return_dir = ""
-        logger.debug("return_dir: %s, return_path: %s",
-                     self.return_dir, self.return_path)
-        self.readFileList(self.return_dir, self.return_path)
+        logger.debug("return_dir: %s, return_path: %s, return_entry: %s",
+                     self.return_dir, self.return_path, self.return_entry)
+        return_entry, self.return_entry = self.return_entry, ""
+        self.readFileList(self.return_dir, self.return_path, return_entry)
 
     def onDialogHide(self):
         FileManager.getInstance(ID).onDatabaseLoaded()
         FileManager.getInstance(ID).onDatabaseChanged()
         logger.debug("file_index: %s", self.file_index)
-        self.return_dir = getDir(self.file_list, self.file_index)
-        self.return_path = getPath(self.file_list, self.file_index)
-        logger.info("self.return_dir: %s, self.return_path: %s",
-                    self.return_dir, self.return_path)
+        if self.playlist_path:
+            # The entries of a playlist live in any folder: the folder of the selected entry would show that folder instead of
+            # the playlist when the screen comes back (e.g. after a slideshow).
+            self.return_dir = "PLAYLIST"
+            self.return_path = self.playlist_path
+            self.return_entry = getPath(self.file_list, self.file_index)
+        else:
+            self.return_dir = getDir(self.file_list, self.file_index)
+            self.return_path = getPath(self.file_list, self.file_index)
+            self.return_entry = ""
+        logger.info("self.return_dir: %s, self.return_path: %s, self.return_entry: %s",
+                    self.return_dir, self.return_path, self.return_entry)
 
     def onSelectionChange(self):
         logger.info("...")
@@ -172,8 +183,9 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
     def createSummary(self):
         return MediaCockpitSummary
 
-    def readFileList(self, load_dir, load_path=""):
-        logger.debug("load_dir: %s, load_path: %s", load_dir, load_path)
+    def readFileList(self, load_dir, load_path="", cursor_path=""):
+        """cursor_path: the entry that gets the cursor when a playlist is read (load_path is the .m3u then)"""
+        logger.debug("load_dir: %s, load_path: %s, cursor_path: %s", load_dir, load_path, cursor_path)
         self.hideTiles()
         self.playlist_path = load_path if load_dir == "PLAYLIST" and load_path else ""
         if load_dir == "":
@@ -184,7 +196,7 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
                 if self.show_dirup_tile:
                     self.file_list.append(createParentDirEntry(load_path))
                 playlist = scanPlaylistFiles(load_path)
-                load_path = ""
+                load_path = cursor_path
                 # a playlist keeps the order of the .m3u, it is not sorted
                 order = {path: i for i, path in enumerate(playlist)}
                 files = list(FileManager.getInstance(ID).getFileListByList(playlist))
@@ -251,7 +263,12 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         if start_index < 0 or not self.media_list:
             logger.debug("nothing to show")
             self.slideshow = False
-            self.paintTiles()
+            if self.song_list:
+                # only songs: the music player plays them, from the selected one
+                afile = getFile(self.file_list, self.file_index)
+                self.openMusicPlayer(afile[MDC_IDX_PATH] if afile and afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MUSIC else "")
+            else:
+                self.paintTiles()
             return
         self.hide()
         start_path = getPath(self.file_list, start_index)
@@ -265,6 +282,24 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         self.video_played = False
         self.setTilesCursor(getIndex(self.file_list, path))
         self.clear_video_buffer = True   # if the screen was not hidden, onDialogShow() did not consume it
+
+    def openMusicPlayer(self, path=""):
+        """Play the songs of the list, starting with the one at path (the first one if it is not a song of the list)."""
+        logger.info("path: %s, songs: %s", path, len(self.song_list))
+        self.slideshow = False
+        self.hide()
+        self.session.openWithCallback(self.MusicPlayerCallback, CockpitMusicPlayer, self.song_list, getIndex(self.song_list, path))
+
+    def MusicPlayerCallback(self, path=""):
+        # the cursor goes to the song that was playing last, also when loadList() reads the list again after the screen is shown
+        if path:
+            if self.playlist_path:
+                self.return_entry = path
+            else:
+                self.return_path = path
+        self.clear_video_buffer = False     # only the audio service was used: the video plane is untouched
+        self.setTilesCursor(getIndex(self.file_list, path))
+        self.clear_video_buffer = True      # if the screen was not hidden, onDialogShow() did not consume it
 
     def CockpitPlayerCallback(self, _reopen=False):
         # the player used the service: the video buffer is cleared by onDialogShow() (self.show() in setTilesCursor)
@@ -345,6 +380,8 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
             elif afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PLAYLIST:
                 path = afile[MDC_IDX_PATH]
                 self.readFileList("PLAYLIST", path)
+            elif afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MUSIC:
+                self.openMusicPlayer(path)
             elif afile[MDC_IDX_MEDIA] in [MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE]:
                 self.hide()
                 if afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PICTURE:

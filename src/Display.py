@@ -4,7 +4,6 @@
 
 from Components.Label import Label
 from Components.Sources.StaticText import StaticText
-from .__init__ import _
 
 
 class Display():
@@ -19,4 +18,5 @@ class Display():
         self.csel["lcd_info"].setText(info)
 
     def displayOSD(self, info):
-        self.csel["osd_info"].setText(_("MediaCockpit") + " - " + info)
+        # the line next to the title in the header of the window (the title already says MediaCockpit)
+        self.csel["osd_info"].setText(info)

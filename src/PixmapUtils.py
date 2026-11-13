@@ -14,7 +14,7 @@ def loadPixmap(path, cached=False):
     loaded, so that callers can fall back to an icon instead of failing half way through painting a screen."""
     ext = os.path.splitext(path)[1].lower()
     try:
-        if ext in (".jpg", ".jpeg"):
+        if ext in {".jpg", ".jpeg"}:
             return loadJPG(path, 1 if cached else 0)
         if ext == ".png":
             return loadPNG(path, 0, 1 if cached else 0)

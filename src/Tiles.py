@@ -109,9 +109,16 @@ class Tiles(Display):
             self.csel[f"Picture{tile_pos}"].instance.setPixmapScale(
                 BT_SCALE | BT_HALIGN_CENTER | BT_VALIGN_CENTER | BT_KEEP_ASPECT_RATIO)
 
-        font = self.csel["Text0"].instance.getFont()
+        # The selected tile has the larger selection font: measure the same unselected tile as for the icons. Reading Text0 while
+        # tile 0 is selected took the enlarged size as the normal one, and every screen show (e.g. after loading a cache
+        # directory) made all tile texts selection_font_offset points bigger.
+        font = self.csel[f"Text{ref}"].instance.getFont()
         self.font_family = font.family
         self.font_size = font.pointSize
+        if self.last_tile_pos == ref:   # a single tile, selected: it cannot be measured unselected
+            self.font_size -= self.selection_font_offset
+        logger.info("tile font: %s %s, icon: %sx%s, thumbnail: %sx%s", self.font_family, self.font_size,
+                    self.icon_size.width(), self.icon_size.height(), self.thumbnail_size.width(), self.thumbnail_size.height())
 
     def selectTile(self, tile_pos):
         logger.debug("tile_pos: %s, last_tile_pos: %s",

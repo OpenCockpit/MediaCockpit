@@ -13,6 +13,7 @@ MDC is a plugin for browsing media content on Enigma2 receivers. It utilizes an 
 - Animation in slideshows
 - Mixed media content (pictures and videos) in directories or playlists
 - Background music
+- Music player for the songs (.mp3, .wma) of a directory or playlist: cover, tags, queue, shuffle, repeat (OK on a song, or PLAY in a list without pictures and videos)
 
 ## Disclaimer
 The project author is not responsible for how this software is used by others. It is not intended to be used for accessing or distributing copyrighted materials without authorization.
@@ -25,3 +26,6 @@ This repository has no control over the streams, links, or the legality of the c
 
 ## Installation
 - https://OpenCockpit.github.io/MediaCockpit
+
+## Wiki
+- https://github.com/OpenCockpit/MediaCockpit/wiki

@@ -186,12 +186,6 @@ msgstr ""
 msgid "Should slideshows be run in an endless loop?"
 msgstr ""
 
-msgid "Recurse directories"
-msgstr ""
-
-msgid "Should directories be loaded recursively?"
-msgstr ""
-
 msgid "Select the background color for icons."
 msgstr ""
 
@@ -432,6 +426,63 @@ msgstr ""
 msgid "Transitions need PicAniCockpit"
 msgstr ""
 
+msgid "Song"
+msgstr ""
+
+msgid "Play selected song"
+msgstr ""
+
+msgid "Next song"
+msgstr ""
+
+msgid "Previous song"
+msgstr ""
+
+msgid "Toggle shuffle"
+msgstr ""
+
+msgid "Toggle repeat"
+msgstr ""
+
+msgid "Shuffle"
+msgstr ""
+
+msgid "Repeat"
+msgstr ""
+
+msgid "Playing"
+msgstr ""
+
+msgid "Paused"
+msgstr ""
+
+msgid "Stopped"
+msgstr ""
+
+msgid "Cannot play"
+msgstr ""
+
+msgid "Next"
+msgstr ""
+
+msgid "Track"
+msgstr ""
+
+msgid "on"
+msgstr ""
+
+msgid "off"
+msgstr ""
+
+msgid "all"
+msgstr ""
+
+msgid "song"
+msgstr ""
+
+msgid "Music player"
+msgstr ""
+
 msgid "Log level"
 msgstr ""
 
@@ -439,9 +490,6 @@ msgid "Movie date format"
 msgstr ""
 
 msgid "Picture background color"
-msgstr ""
-
-msgid "Picture foreground color"
 msgstr ""
 
 msgid "Slideshow animation"
@@ -454,9 +502,6 @@ msgid "Slideshow endless loop"
 msgstr ""
 
 msgid "Select the debug log level."
-msgstr ""
-
-msgid "Select the foreground color of icons."
 msgstr ""
 
 msgid "Which animation should be used for slide transitions?"

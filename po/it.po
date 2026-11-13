@@ -232,12 +232,6 @@ msgstr "Animazione"
 msgid "Should slideshows be run in an endless loop?"
 msgstr "Eseguire le presentazioni in un loop infinito?"
 
-msgid "Recurse directories"
-msgstr "Caricamento ricorsivo delle directory"
-
-msgid "Should directories be loaded recursively?"
-msgstr "Caricare le directory in modo ricorsivo?"
-
 msgid "Select the background color for icons."
 msgstr "Selezionare il colore di sfondo delle icone."
 
