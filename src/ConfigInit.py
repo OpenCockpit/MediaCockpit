@@ -5,30 +5,8 @@
 import os
 from collections import namedtuple
 from Components.config import config, ConfigSet, ConfigDirectory, ConfigInteger, ConfigText, ConfigSelection, ConfigYesNo, ConfigSubsection
-from skin import colors as colorNames
 from .__init__ import _
 from .Debug import logger
-
-
-choices_date = [
-    ("%d.%m.%Y", _("DD.MM.YYYY")),
-    ("%a %d.%m.%Y", _("WD DD.MM.YYYY")),
-
-    ("%d.%m.%Y %H:%M", _("DD.MM.YYYY HH:MM")),
-    ("%a %d.%m.%Y %H:%M", _("WD DD.MM.YYYY HH:MM")),
-
-    ("%d.%m. %H:%M", _("DD.MM. HH:MM")),
-    ("%a %d.%m. %H:%M", _("WD DD.MM. HH:MM")),
-
-    ("%Y/%m/%d", _("YYYY/MM/DD")),
-    ("%a %Y/%m/%d", _("WD YYYY/MM/DD")),
-
-    ("%Y/%m/%d %H:%M", _("YYYY/MM/DD HH:MM")),
-    ("%a %Y/%m/%d %H:%M", _("WD YYYY/MM/DD HH:MM")),
-
-    ("%m/%d %H:%M", _("MM/DD HH:MM")),
-    ("%a %m/%d %H:%M", _("WD MM/DD HH:MM"))
-]
 
 
 # Define namedtuple for sort configuration
@@ -42,14 +20,7 @@ sort_modes = {
     "3": SortMode(SortConfig("alpha", True), _("Alpha sort down")),
 }
 
-
 choices_sort = [(k, v.description) for k, v in list(sort_modes.items())]
-
-
-choices_color = []
-for key in list(colorNames.keys()):
-    choices_color.append((key, _(key)))
-
 
 # Slideshow transitions are played by PicAniCockpit (ids 100-118 and 199 = random). Only its pure Python part is imported here, to
 # get the list: the native module is loaded when a slideshow starts. Without the package the list holds a placeholder.
@@ -96,16 +67,6 @@ config.plugins.mediacockpit.selection_size_offset = ConfigInteger(
     default=10, limits=(0, 50))
 config.plugins.mediacockpit.selection_font_offset = ConfigInteger(
     default=2, limits=(0, 10))
-config.plugins.mediacockpit.normal_background_color = ConfigSelection(
-    default="#00294071", choices=choices_color + [("#00294071", _("default"))])
-config.plugins.mediacockpit.selection_background_color = ConfigSelection(
-    default="#004176b6", choices=choices_color + [("#004176b6", _("default"))])
-config.plugins.mediacockpit.normal_foreground_color = ConfigSelection(
-    default="#eeeeee", choices=choices_color + [("#eeeeee", _("default"))])
-config.plugins.mediacockpit.selection_foreground_color = ConfigSelection(
-    default="#ffffff", choices=choices_color + [("#ffffff", _("default"))])
-config.plugins.mediacockpit.selection_frame_color = ConfigSelection(
-    default="#b3b3b9", choices=choices_color + [("#b3b3b9", _("default"))])
 config.plugins.mediacockpit.slideshow_loop = ConfigYesNo(default=False)
 config.plugins.mediacockpit.slideshow_duration = ConfigInteger(
     default=5, limits=(3, 30))
@@ -118,16 +79,12 @@ config.plugins.mediacockpit.transition_quality = ConfigSelection(
 config.plugins.mediacockpit.kenburns = ConfigYesNo(default=False)
 config.plugins.mediacockpit.sort_across_dirs = ConfigYesNo(
     default=False)
-config.plugins.mediacockpit.picture_background = ConfigSelection(
-    default="black", choices=choices_color)
 config.plugins.mediacockpit.database_directory = ConfigDirectory(
     default="/etc/enigma2")
 config.plugins.mediacockpit.movie_resume_at_last_pos = ConfigYesNo(
     default=False)
 config.plugins.mediacockpit.movie_start_position = ConfigSelection(default="beginning", choices=[(
     "beginning", _("beginning")), ("first_mark", _("first mark")), ("event_start", _("event start"))])
-config.plugins.mediacockpit.movie_date_format = ConfigSelection(
-    default="%d.%m.%Y %H:%M", choices=choices_date)
 config.plugins.mediacockpit.bookmarks = ConfigSet([], [])
 if not config.plugins.mediacockpit.bookmarks.value:
     config.plugins.mediacockpit.bookmarks.value = initBookmarks()

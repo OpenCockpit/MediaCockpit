@@ -18,6 +18,18 @@ screen:
         transparent: "1"
         valign: "center"
         zPosition: "21"
+    # a short message (Toast.py), over the tiles; wide and two lines high: some messages are long
+    - widget:
+        backgroundColor: "md_scrim"
+        cornerRadius: "$radius_window"
+        font: "$md_label_large"
+        foregroundColor: "md_on_surface"
+        halign: "center"
+        name: "toast"
+        position: "306,68"
+        size: "1300,96"
+        valign: "center"
+        zPosition: "50"
     - xmlinc:
         file: "screenpart_MediaCockpitBody.zmlinc"
         position: "$window_full_body_x,$window_full_body_y"

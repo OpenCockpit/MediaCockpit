@@ -88,42 +88,6 @@ msgstr "min"
 msgid "About"
 msgstr "Informazioni"
 
-msgid "DD.MM.YYYY"
-msgstr "GG.MM.AAAA"
-
-msgid "WD DD.MM.YYYY"
-msgstr "GS GG.MM.AAAA"
-
-msgid "DD.MM.YYYY HH:MM"
-msgstr "GG.MM.YYYY HH:MM"
-
-msgid "WD DD.MM.YYYY HH:MM"
-msgstr "GS GG.MM.AAAA HH:MM"
-
-msgid "DD.MM. HH:MM"
-msgstr "GG.MM. HH:MM"
-
-msgid "WD DD.MM. HH:MM"
-msgstr "GS GG.MM. HH:MM"
-
-msgid "YYYY/MM/DD"
-msgstr "AAAA/MM/GG"
-
-msgid "WD YYYY/MM/DD"
-msgstr "GS AAAA/MM/GG"
-
-msgid "YYYY/MM/DD HH:MM"
-msgstr "AAAA/MM/GG HH:MM"
-
-msgid "WD YYYY/MM/DD HH:MM"
-msgstr "GS AAAA/MM/GG HH:MM"
-
-msgid "MM/DD HH:MM"
-msgstr "MM/GG HH:MM"
-
-msgid "WD MM/DD HH:MM"
-msgstr "GS MM/GG HH:MM"
-
 msgid "None"
 msgstr "Nessuna"
 
@@ -138,9 +102,6 @@ msgstr "Ordine alfabetico (A-Z)"
 
 msgid "Alpha sort down"
 msgstr "Ord. alfabetico (Z-A)"
-
-msgid "default"
-msgstr "Predefinito"
 
 msgid "beginning"
 msgstr "All'inizio"
@@ -169,30 +130,6 @@ msgstr "Mostrare la casella della directory padre"
 msgid "Should a tile be displayed for navigation to the parent directory?"
 msgstr "Mostrare una casella per la navigazione verso la directory padre?"
 
-msgid "Tile foreground color"
-msgstr "Colore primo piano casella"
-
-msgid "Select the tile foreground color."
-msgstr "Selezionare il colore di primo piano della casella."
-
-msgid "Tile background color"
-msgstr "Colore sfondo casella"
-
-msgid "Select the tile background color."
-msgstr "Selezionare il colore di sfondo della casella."
-
-msgid "Tile selection foreground color"
-msgstr "Colore primo piano casella selezionata"
-
-msgid "Select the tile selection foreground color."
-msgstr "Selezionare il colore per il primo piano della casella selezionata."
-
-msgid "Tile selection background color"
-msgstr "Colore sfondo casella selezionata"
-
-msgid "Select the tile selection background color."
-msgstr "Selezionare il colore di sfondo della casella selezionata."
-
 msgid "Tile selection size offset"
 msgstr "Offset dimensioni selezione casella"
 
@@ -211,12 +148,6 @@ msgstr "Cornice selezione casella"
 msgid "Should a tile selection frame be displayed?"
 msgstr "Visualizzare una cornice di selezione caselle?"
 
-msgid "Tile selection frame color"
-msgstr "Colore cornice selezione caselle"
-
-msgid "Select the tile selection frame color."
-msgstr "Selezionare il colore della cornice selezione caselle."
-
 msgid "Create thumbnails"
 msgstr "Creare miniature"
 
@@ -232,9 +163,6 @@ msgstr "Animazione"
 msgid "Should slideshows be run in an endless loop?"
 msgstr "Eseguire le presentazioni in un loop infinito?"
 
-msgid "Select the background color for icons."
-msgstr "Selezionare il colore di sfondo delle icone."
-
 msgid "Resume video at last position"
 msgstr "Riprendere dall'ultima posizione"
 
@@ -246,9 +174,6 @@ msgstr "Avviare il video a"
 
 msgid "Select at which position video is started at."
 msgstr "Determinate da quale posizione il video debba essere avviato."
-
-msgid "Select the date format."
-msgstr "Selezionare il formato delle date."
 
 msgid "MediaCockpit"
 msgstr "MediaCockpit"
@@ -418,9 +343,6 @@ msgstr "Inizio elenco"
 msgid "Show load progress"
 msgstr "Mostrare avanzamento caricamento"
 
-msgid "Do you really want to load the following directory?"
-msgstr "Caricare davvero la seguente directory?"
-
 msgid "Do you really want to load the following bookmark?"
 msgstr "Caricare davvero il seguente segnalibro?"
 
@@ -474,6 +396,24 @@ msgstr "nessuna"
 
 msgid "Transitions need PicAniCockpit"
 msgstr "Le transizioni richiedono PicAniCockpit"
+
+msgid "%d entries of the playlist are not in the cache yet. Open the playlist again to add more, or load their directory with the yellow key."
+msgstr "%d voci della playlist non sono ancora nella cache. Aprire di nuovo la playlist per aggiungerne altre, oppure caricare la loro directory con il tasto giallo."
+
+msgid "The file is not available."
+msgstr "Il file non è disponibile."
+
+msgid "Unavailable"
+msgstr "Non disponibile"
+
+msgid "Load the following directory into the cache?"
+msgstr "Caricare la seguente directory nella cache?"
+
+msgid "This directory only"
+msgstr "Solo questa directory"
+
+msgid "This directory and all its subdirectories"
+msgstr "Questa directory e tutte le sottodirectory"
 
 msgid "Infobar/Play"
 msgstr ""

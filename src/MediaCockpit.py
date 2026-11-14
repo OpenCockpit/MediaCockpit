@@ -8,6 +8,7 @@ from Screens.Screen import Screen
 from Screens.HelpMenu import HelpableScreen
 from Screens.LocationBox import LocationBox
 from Screens.MessageBox import MessageBox
+from Screens.ChoiceBox import ChoiceBox
 from Components.ActionMap import HelpableActionMap
 from Components.config import config
 from Components.Button import Button
@@ -20,21 +21,26 @@ from .Version import ID, PLUGIN
 from .Debug import logger
 from .FileManagerUtils import FILE_OP_LOAD
 from .FileManagerUtils import MDC_IDX_MEDIA, MDC_IDX_PATH, MDC_IDX_TYPE, MDC_IDX_BOOKMARK
-from .FileManagerUtils import MDC_TYPE_FILE, MDC_MEDIA_TYPE_FILE, MDC_MEDIA_TYPE_UP, MDC_MEDIA_TYPE_DIR, MDC_MEDIA_TYPE_PLAYLIST, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE, MDC_MEDIA_TYPE_MUSIC
+from .FileManagerUtils import MDC_TYPE_FILE, MDC_MEDIA_TYPE_FILE, MDC_MEDIA_TYPE_UP, MDC_MEDIA_TYPE_DIR, MDC_MEDIA_TYPE_PLAYLIST, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE, MDC_MEDIA_TYPE_MUSIC, MDC_MEDIA_TYPE_UNAVAILABLE
 from .FileListUtils import getFile, getDir, getPath, getIndex, nextIndex, findMediaIndex, splitMediaSongList, scanPlaylistFiles
 from .FileUtils import deleteFile, deleteFiles
 from .MediaInfo import MediaInfo
 from .Tiles import Tiles
 from .Slideshow import Slideshow
+from .Toast import Toast
 from .CockpitPlayer import CockpitPlayer
 from .CockpitMusicPlayer import CockpitMusicPlayer
 from .ServiceUtils import getService
 from .ServiceCenter import ServiceCenter
-from .FileListUtils import createBookmarkEntries, createParentDirEntry, sortList
+from .FileListUtils import createBookmarkEntries, createParentDirEntry, createUnavailableEntry, sortList
 from .MediaCockpitSummary import MediaCockpitSummary
 from .FileManagerProgress import FileManagerProgress
 from .Menu import Menu
 from .SetupScreen import SetupScreen
+
+
+LOAD_DIR, LOAD_TREE = "dir", "tree"     # the answers of the load cache directory query
+PLAYLIST_LOAD_LIMIT = 50    # playlist files that are added to the cache each time a playlist is read
 
 
 class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
@@ -73,6 +79,9 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         self["key_play"] = StaticText(_("PLAY"))
         self["key_previous"] = StaticText(_("PREVIOUS"))
         self["key_0"] = StaticText(_("0"))
+        self.toast = Toast(self)    # a short message inside the screen (the label "toast" of the skin)
+        self.onLayoutFinish.append(self.toast.hide)
+        self.onClose.append(self.toast.stop)
 
         HelpableScreen.__init__(self)
 
@@ -145,9 +154,11 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         if self.first_start and config.plugins.mediacockpit.start_home_dir.value:
             self.return_dir = ""
             self.return_path = MountCockpit.getInstance().getHomeDir(ID)
-            self.first_start = False
         elif self.return_dir in self.bookmarks and self.return_path == self.return_dir:
             self.return_dir = ""
+        # whatever start_home_dir says: the first load is done. Otherwise every show() of the screen (after a slideshow, the
+        # player, ...) would read the list again, and start the slideshow again if it was started with PLAY.
+        self.first_start = False
         logger.debug("return_dir: %s, return_path: %s, return_entry: %s",
                      self.return_dir, self.return_path, self.return_entry)
         return_entry, self.return_entry = self.return_entry, ""
@@ -173,7 +184,7 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
     def onSelectionChange(self):
         logger.info("...")
         afile = getFile(self.file_list, self.file_index)
-        if afile[MDC_IDX_TYPE] == MDC_TYPE_FILE:
+        if afile and afile[MDC_IDX_TYPE] == MDC_TYPE_FILE and afile[MDC_IDX_MEDIA] != MDC_MEDIA_TYPE_UNAVAILABLE:
             logger.debug("file")
             self["key_red"].setText(_("Delete file"))
         else:
@@ -188,6 +199,7 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         logger.debug("load_dir: %s, load_path: %s, cursor_path: %s", load_dir, load_path, cursor_path)
         self.hideTiles()
         self.playlist_path = load_path if load_dir == "PLAYLIST" and load_path else ""
+        self.current_dir = self.playlist_path or load_dir   # what the tile screen shows when the list is empty
         if load_dir == "":
             self.file_list = createBookmarkEntries(self.bookmarks)
         else:
@@ -197,11 +209,7 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
                     self.file_list.append(createParentDirEntry(load_path))
                 playlist = scanPlaylistFiles(load_path)
                 load_path = cursor_path
-                # a playlist keeps the order of the .m3u, it is not sorted
-                order = {path: i for i, path in enumerate(playlist)}
-                files = list(FileManager.getInstance(ID).getFileListByList(playlist))
-                files.sort(key=lambda afile: order.get(afile[MDC_IDX_PATH], len(order)))
-                self.file_list += files
+                self.file_list += self.getPlaylistFiles(playlist)
             else:
                 if self.show_dirup_tile:
                     self.file_list.append(createParentDirEntry(load_dir))
@@ -221,6 +229,26 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         else:
             self.paintTiles()
 
+    def getPlaylistFiles(self, playlist):
+        """The entries of a playlist in the order of the .m3u (a playlist is not sorted), one for every file of it. A file that
+        cannot be found, or that the cache does not have, is an entry of the type unavailable.
+        Files that exist but are not in the cache yet (their folder was never loaded) are added to it, up to PLAYLIST_LOAD_LIMIT
+        at a time because every one is read from disk (EXIF, thumbnail) in the main thread."""
+        file_manager = FileManager.getInstance(ID)
+        paths = list(dict.fromkeys(playlist))
+        files = {afile[MDC_IDX_PATH]: afile for afile in file_manager.getFileListByList(paths)}
+        to_load = [path for path in paths if path not in files and os.path.isfile(path)]
+        if to_load:
+            logger.info("%s of %s playlist entries are not in the cache", len(to_load), len(paths))
+            for path in to_load[:PLAYLIST_LOAD_LIMIT]:
+                file_manager.loadDatabaseFile(path)
+            files = {afile[MDC_IDX_PATH]: afile for afile in file_manager.getFileListByList(paths)}
+            later = [path for path in to_load if path not in files]
+            if later:
+                logger.warning("not in the cache: %s", later)
+                self.toast.show(_("%d entries of the playlist are not in the cache yet. Open the playlist again to add more, or load their directory with the yellow key.") % len(later))
+        return [files[path] if path in files else createUnavailableEntry(path) for path in paths]
+
     def goHome(self):
         self.changeDir("")
 
@@ -232,7 +260,8 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
             return
         afile = getFile(self.file_list, self.file_index)
         logger.debug("afile: %s", afile)
-        path = afile[MDC_IDX_PATH]
+        # an empty list has no entry to start from: use the folder that is shown, like the parent tile does
+        path = afile[MDC_IDX_PATH] if afile else os.path.join(self.current_dir or "", "..")
         if path not in self.bookmarks:
             adir = os.path.dirname(path)
             if adir in self.bookmarks:
@@ -268,7 +297,7 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
                 afile = getFile(self.file_list, self.file_index)
                 self.openMusicPlayer(afile[MDC_IDX_PATH] if afile and afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MUSIC else "")
             else:
-                self.paintTiles()
+                self.repaintTiles()
             return
         self.hide()
         start_path = getPath(self.file_list, start_index)
@@ -307,10 +336,10 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         self.setTilesCursor(self.file_index)
 
     def setTilesCursor(self, file_index):
+        self.slideshow = False      # before show(): onDialogShow() may read the list, which would start the slideshow again
         self.show()
         self.file_index = file_index
-        self.slideshow = False
-        self.paintTiles()
+        self.repaintTiles()     # a picture may have been rotated, a song or video played, ... while the screen was away
 
     def exit(self):
         logger.info("...")
@@ -324,7 +353,7 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
 
     def deleteFile(self):
         afile = getFile(self.file_list, self.file_index)
-        if afile[MDC_IDX_TYPE] == MDC_TYPE_FILE:
+        if afile and afile[MDC_IDX_TYPE] == MDC_TYPE_FILE and afile[MDC_IDX_MEDIA] != MDC_MEDIA_TYPE_UNAVAILABLE:
             self.session.openWithCallback(self.deleteFileCallback, MessageBox, _(
                 "Do you really want to delete the file?"))
 
@@ -347,7 +376,7 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
             if not self.file_index < len(self.file_list):
                 self.file_index -= 1
             self.return_path = getPath(self.file_list, self.file_index)
-            self.paintTiles()
+            self.repaintTiles()
 
     def playpause(self):
         if self.file_list:
@@ -356,7 +385,7 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
             logger.info("afile: %s", afile)
             if afile[MDC_IDX_MEDIA] in MDC_MEDIA_TYPE_FILE:
                 self.startSlideshow()
-            elif afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_UP:
+            elif afile[MDC_IDX_MEDIA] in {MDC_MEDIA_TYPE_UP, MDC_MEDIA_TYPE_UNAVAILABLE}:
                 self.file_index = nextIndex(
                     self.file_index, len(self.file_list))
                 self.startSlideshow()
@@ -382,6 +411,8 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
                 self.readFileList("PLAYLIST", path)
             elif afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MUSIC:
                 self.openMusicPlayer(path)
+            elif afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_UNAVAILABLE:
+                self.toast.show(_("The file is not available."))
             elif afile[MDC_IDX_MEDIA] in [MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE]:
                 self.hide()
                 if afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PICTURE:
@@ -458,12 +489,22 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         self.session.open(FileManagerProgress, FILE_OP_LOAD)
 
     def loadCacheDir(self):
+        adir = getDir(self.file_list, self.file_index)
+        if not adir:
+            return
         if self.is_mounted:
+            # the first entry (this directory only) is the default, EXIT and the last entry abort
             self.session.openWithCallback(
                 self.loadCacheDirResponse,
-                MessageBox,
-                _("Do you really want to load the following directory?") + "\n" + getDir(self.file_list, self.file_index),
-                MessageBox.TYPE_YESNO
+                ChoiceBox,
+                title=_("Load the following directory into the cache?") + "\n" + adir,
+                list=[
+                    (_("This directory only"), LOAD_DIR),
+                    (_("This directory and all its subdirectories"), LOAD_TREE),
+                    (_("Cancel"), None),
+                ],
+                windowTitle=_("Load cache directory"),
+                allow_cancel=True,
             )
         else:
             self.session.open(
@@ -472,17 +513,23 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
                 MessageBox.TYPE_INFO
             )
 
-    def loadCacheDirResponse(self, response):
-        if response:
-            FileManager.getInstance(ID).loadDatabaseDir(
-                getDir(self.file_list, self.file_index), False)
-            self.session.open(FileManagerProgress, FILE_OP_LOAD)
-            self.return_dir = getDir(self.file_list, self.file_index)
-            self.return_path = getPath(self.file_list, self.file_index)
-            logger.debug("return_dir: %s, return_path: %s",
-                         self.return_dir, self.return_path)
+    def loadCacheDirResponse(self, answer=None):
+        if not answer or answer[1] is None:
+            logger.info("cancelled")
+            return
+        adir = getDir(self.file_list, self.file_index)
+        recursive = answer[1] == LOAD_TREE
+        logger.info("adir: %s, recursive: %s", adir, recursive)
+        FileManager.getInstance(ID).loadDatabaseDir(adir, recursive)
+        self.session.open(FileManagerProgress, FILE_OP_LOAD)
+        self.return_dir = adir
+        self.return_path = getPath(self.file_list, self.file_index)
+        logger.debug("return_dir: %s, return_path: %s",
+                     self.return_dir, self.return_path)
 
     def loadCacheBookmark(self):
+        if not self.file_list:
+            return
         if self.is_mounted:
             self.session.openWithCallback(
                 self.loadCacheBookmarkResponse,

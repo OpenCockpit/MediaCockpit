@@ -19,13 +19,13 @@ except Exception as e:  # noqa: BLE001 - optional package, the slideshow must wo
     picani_viewer = False
 from Plugins.SystemPlugins.CacheCockpit.FileManager import FileManager
 from enigma import ePoint, eSize, eTimer, getDesktop, gPixmapPtr
-from skin import colors as colorNames
+from skin import parseColor
 from .__init__ import _
 from .MediaCockpitSummary import MediaCockpitSummary
 from .Debug import logger
-from .PictureUtils import getPicturePath, rotatePicture, setExifOrientation
+from .PictureUtils import getPicturePath, getExifData, rotatePicture, setExifOrientation
 from .PixmapUtils import loadPixmap
-from .FileManagerUtils import MDC_IDX_MEDIA, MDC_IDX_PATH, MDC_IDX_META
+from .FileManagerUtils import MDC_IDX_MEDIA, MDC_IDX_PATH
 from .FileManagerUtils import MDC_MEDIA_TYPE_FILE, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE
 from .MediaInfo import MediaInfo
 from .DelayTimer import DelayTimer
@@ -35,9 +35,11 @@ from .FileListUtils import previousIndex, nextIndex, findMediaIndex, getPath
 from .ConfigInit import pic_slideshow_animations
 from .Thumbnail import Thumbnail
 from .Display import Display
+from .Toast import Toast
 from .Version import ID, PLUGIN
 
-TOAST_TIMEOUT = 3
+PICTURE_BACKGROUND = "md_surface_container_lowest"   # colour role of the skin: behind pictures that do not fill the screen
+INFO_TOAST_TIMEOUT = 5      # seconds the picture number and name stay on the screen
 
 
 class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
@@ -47,17 +49,14 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
                     file_index, start_slideshow, file_list, song_list)
         self.csel = csel
         self.slideshow_active = False
+        self.info_line = ""     # number and name of the picture, what the header shows
         self.start_slideshow = start_slideshow
         self["key_red"] = Button(_("Exit"))
         self["key_green"] = Button(_("Slideshow"))
         self["key_yellow"] = Button(_("Rotate picture"))
         self["key_blue"] = Button(_("Toggle Transition"))
         self["body"] = Label()      # the place of the picture while the buttons are shown (its rectangle is set by the skin)
-        # A short message inside the screen. Tools.Notifications popups are only shown by the InfoBar, i.e. never while this
-        # screen is open: they would queue up and appear after leaving the slideshow.
-        self["toast"] = Label()
-        self.toast_timer = eTimer()
-        self.toast_timer.callback.append(self.hideToast)
+        self.toast = Toast(self)    # a short message inside the screen (the label "toast" of the skin)
 
         Thumbnail.__init__(self)
         Display.__init__(self, self)
@@ -114,7 +113,7 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
 
         # enigma2 plays the videos, with their sound, and the background music. Only one service plays at a time: the music is
         # suspended while a movie plays and goes on after it.
-        self.video = ServicePlayer(self, self.showVideoCallback)
+        self.video = ServicePlayer(self, self.showVideoCallback, self.videoStarted)
         self.music = BackgroundMusic(self, self.song_list)
 
         for animation in self.slideshow_animations:
@@ -124,14 +123,6 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         logger.debug("animation: %s", self.animation)
 
         self.onLayoutFinish.append(self.__onLayoutFinish)
-
-    def showToast(self, text, timeout=TOAST_TIMEOUT):
-        self["toast"].setText(text)
-        self["toast"].show()
-        self.toast_timer.start(timeout * 1000, True)
-
-    def hideToast(self):
-        self["toast"].hide()
 
     def createSummary(self):
         return MediaCockpitSummary
@@ -147,7 +138,12 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         self["picture"].instance.resize(body.size())
         self["picture"].instance.move(body.position())
         self["picture_background"].hide()
-        self["osd_info"].show()
+        if self.picani and self.slideshow_active:
+            # The pictures of the running slideshow cover the window, so its header line would be plain text on the picture,
+            # hard to read: the same line as a toast, which has a background.
+            self.toast.show(self.info_line, INFO_TOAST_TIMEOUT)
+        else:
+            self["osd_info"].show()
 
     def hideButtons(self):
         logger.info("...")
@@ -162,14 +158,15 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
             self.showButtons()
         else:
             self.hideButtons()
+            self.toast.hide()       # the line of showButtons() while the slideshow runs
 
     def __onLayoutFinish(self):
         logger.debug("...")
-        self["toast"].hide()
+        self.toast.hide()
         if findMediaIndex(self.file_list) >= 0:
             self.hideButtons()
             self.file = self.file_list[self.file_index]
-            self.background_color = colorNames[config.plugins.mediacockpit.picture_background.value]
+            self.background_color = parseColor(PICTURE_BACKGROUND)
             self["picture_background"].instance.setBackgroundColor(
                 self.background_color)
             self["picture_background"].instance.invalidate()
@@ -207,8 +204,9 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
             direction = ""
         self.displayLCD(
             f"{direction}{self.file_index + 1}/{len(self.file_list)}", adir)
-        # the line in the header, visible while the buttons are shown
-        self.displayOSD(f"{_('Slideshow')}: {self.file_index + 1}/{len(self.file_list)} - {os.path.basename(path)}")
+        # the line in the header, visible while the buttons are shown (a toast while the slideshow runs, see showButtons())
+        self.info_line = f"{_('Slideshow')}: {self.file_index + 1}/{len(self.file_list)} - {os.path.basename(path)}"
+        self.displayOSD(self.info_line)
 
 # slide functions
 
@@ -227,7 +225,7 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
             self.show()
             self.showButtons()
         self.showLCDInfo()
-        self.showToast(text or _("End of slideshow"))
+        self.toast.show(text or _("End of slideshow"))
 
     def cancelShow(self):
         """Forget a slide that is waiting for its delay: every navigation would otherwise queue one more showSlide() and
@@ -251,6 +249,8 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         logger.info("***************   %s   ******************",
                     self.file_index)
         previous, self.file = self.file, self.file_list[self.file_index]
+        if previous[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MOVIE:
+            self.show()     # the screen was hidden for the video: cover the video plane at once, not after the delay below
         # The delay lets the video player or the black frame (showiframe) finish before the next slide starts. Between two
         # pictures with PicAniCockpit it would only stretch the hold time: the transition has been prepared long ago.
         if self.picani and MDC_MEDIA_TYPE_MOVIE not in (previous[MDC_IDX_MEDIA], self.file[MDC_IDX_MEDIA]):
@@ -282,14 +282,8 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
             if self.slideshow_active:
                 self.slide_timer.start(self.slideshow_duration, True)
         elif self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MOVIE:
-            if self.picani:
-                self["image"].hide()  # the video replaces the picture: the next picture must not be faded from the old one
-            if self.execing:
-                self.hide()
-            else:
-                # The first slide is started from onLayoutFinish, before the session shows the screen: a hide() now is undone by
-                # that show(), and the picture background would cover the video (black first video).
-                DelayTimer(1, self.hide)
+            # Neither the screen nor the last picture are taken away yet: until the video has its first frame (videoStarted()) the
+            # video plane would show what it held before, for a moment. The picture, or the dark background, covers that.
             self.music.suspend()    # the movie has its own sound and needs the service
             self.showVideo(self.file[MDC_IDX_PATH])
         else:
@@ -324,9 +318,24 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         if self.video.running():
             logger.debug("already playing")
             return
-        self["picture"].instance.setPixmap(gPixmapPtr())
         self.csel.video_played = True   # MediaCockpit has to clear the video plane when it comes back
         self.video.play(filename)
+
+    def videoStarted(self):
+        """The video has its first frame: the picture goes and the screen is hidden, so that the video plane is seen."""
+        if self.file[MDC_IDX_MEDIA] != MDC_MEDIA_TYPE_MOVIE or not self.video.running():
+            return
+        # The pictures must be gone when the screen shows again after the video: the next picture is cut in, not faded from the old
+        # one, and the old one is not seen for a moment.
+        self["picture"].instance.setPixmap(gPixmapPtr())
+        if self.picani:
+            self["image"].hide()
+        if self.execing:
+            self.hide()
+        else:
+            # The first slide is started from onLayoutFinish, before the session shows the screen: a hide() now is undone by that
+            # show(), and the picture background would cover the video (black first video).
+            DelayTimer(1, self.hide)
 
     def showVideoCallback(self):
         """The video ended on its own (a stopped or skipped one never gets here)."""
@@ -354,7 +363,7 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
 
     def toggleTransitionMode(self):
         if not self.picani:
-            self.showToast(_("Transitions need PicAniCockpit"))
+            self.toast.show(_("Transitions need PicAniCockpit"))
             return
         # next entry of the list of the engine in use (the ids of PicAniCockpit are not consecutive)
         ids = [animation[0] for animation in self.slideshow_animations]
@@ -368,7 +377,7 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
             if animation[0] == str(self.animation):
                 sanimation = animation[1]
                 break
-        self.showToast(_("Animation") + " " + str(self.animation) + ": " + sanimation)
+        self.toast.show(_("Animation") + " " + str(self.animation) + ": " + sanimation)
 
     def imageChanged(self):
         logger.debug("...")
@@ -408,7 +417,9 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         if rc:
             self.createThumbnail(path, True)
 
-            orientation = afile[MDC_IDX_META]["Orientation"]
+            # From the picture itself: the meta of the list entry is a JSON string (not a dict), and it is the one of the time the
+            # list was read, so it is out of date after the first rotation of the same picture.
+            orientation = getExifData(path)["Orientation"]
             new_orientation = orientation  # Default to current orientation
             if orientation == 1:
                 new_orientation = 6
@@ -439,7 +450,7 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
 
     def exit(self):
         self.slide_timer.stop()
-        self.toast_timer.stop()
+        self.toast.stop()
         DelayTimer.stopAll()
         self.stopVideo()
         self.music.stop()
@@ -452,7 +463,7 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
 
     def yellow(self):
         if self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PICTURE:
-            self.showToast(_("Rotating picture..."))
+            self.toast.show(_("Rotating picture..."))
             # rotating blocks the main loop for a while: give the toast a chance to be painted first
             DelayTimer(100, self.rotatePicture, self.file)
 

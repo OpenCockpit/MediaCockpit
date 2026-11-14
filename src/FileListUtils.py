@@ -8,9 +8,9 @@ from urllib.parse import unquote
 from Components.config import config
 from Plugins.SystemPlugins.CacheCockpit.FileManager import FileManager
 from .Debug import logger
-from .FileManagerUtils import MDC_TYPE_DIR
+from .FileManagerUtils import MDC_TYPE_DIR, MDC_TYPE_FILE, MDC_TYPE_LINK
 from .FileManagerUtils import MDC_IDX_TYPE, MDC_IDX_PATH, MDC_IDX_MEDIA, MDC_IDX_META, MDC_IDX_DATE
-from .FileManagerUtils import MDC_MEDIA_TYPE_FILE, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE, MDC_MEDIA_TYPE_MUSIC, MDC_MEDIA_TYPE_DIR, MDC_MEDIA_TYPE_UP
+from .FileManagerUtils import MDC_MEDIA_TYPE_FILE, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE, MDC_MEDIA_TYPE_MUSIC, MDC_MEDIA_TYPE_DIR, MDC_MEDIA_TYPE_UP, MDC_MEDIA_TYPE_UNAVAILABLE
 from .ConfigInit import sort_modes
 from .Version import ID
 from .FileUtils import readFile
@@ -54,7 +54,8 @@ def getDir(file_list, index):
         afile = file_list[index]
         logger.debug("afile: %s", afile)
         path = afile[MDC_IDX_PATH]
-        if afile[MDC_IDX_TYPE] == MDC_TYPE_DIR and not path.endswith(".."):
+        # a link is a folder too (the cache stores a symlinked folder as a link, and lists it with the folders)
+        if afile[MDC_IDX_TYPE] in {MDC_TYPE_DIR, MDC_TYPE_LINK} and not path.endswith(".."):
             current_dir = path
         else:
             current_dir = os.path.dirname(path)
@@ -126,10 +127,12 @@ def sortList(file_list):
 
 
 def scanPlaylistFiles(path):
+    """The entries of a .m3u as paths, in order. Entries whose file does not exist, and streams, are returned as well: the
+    caller shows them as unavailable instead of dropping them without a word."""
     logger.debug("path: %s", path)
     file_list = []
     playlist_dir = os.path.dirname(path)
-    lines = readFile(path).lstrip("﻿").splitlines()  # a UTF-8 BOM would corrupt the first path
+    lines = readFile(path).lstrip("\ufeff").splitlines()  # a UTF-8 BOM would corrupt the first path
     for line in lines:
         line = line.strip()
         if not line or line.startswith("#"):
@@ -138,15 +141,12 @@ def scanPlaylistFiles(path):
         if line.startswith("file://"):
             line = unquote(line[len("file://"):])
         elif "://" in line:
-            logger.debug("skip stream: %s", line)
+            logger.debug("stream: %s", line)
+            file_list.append(line)
             continue
         if not line.startswith("/"):
             line = os.path.join(playlist_dir, line)
-        line = os.path.normpath(line)
-        if os.path.isfile(line):
-            file_list.append(line)
-        else:
-            logger.debug("skip missing file: %s", line)
+        file_list.append(os.path.normpath(line))
     return file_list
 
 
@@ -162,6 +162,15 @@ def createBookmarkEntries(bookmarks):
         afile[MDC_IDX_META] = json.dumps(meta)
         alist.append(afile)
     return alist
+
+
+def createUnavailableEntry(path):
+    """The list entry of a playlist file that cannot be found (or is not in the cache)."""
+    logger.debug("path: %s", path)
+    afile = list(FileManager.getInstance(ID).newDirData(path, MDC_TYPE_FILE))
+    afile[MDC_IDX_MEDIA] = MDC_MEDIA_TYPE_UNAVAILABLE
+    afile[MDC_IDX_META] = json.dumps({})
+    return afile
 
 
 def createParentDirEntry(path):

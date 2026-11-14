@@ -6,14 +6,9 @@
 		<item text="Sort" description="Select the list sort mode.">config.plugins.mediacockpit.sort</item>
 		<item text="Sort across directories" description="Should directories be sorted recursively?">config.plugins.mediacockpit.sort_across_dirs</item>
 		<item text="Show parent directory tile" description="Should a tile be displayed for navigation to the parent directory?">config.plugins.mediacockpit.show_dirup_tile</item>
-		<item text="Tile foreground color" description="Select the tile foreground color.">config.plugins.mediacockpit.normal_foreground_color</item>
-		<item text="Tile background color" description="Select the tile background color.">config.plugins.mediacockpit.normal_background_color</item>
-		<item text="Tile selection foreground color" description="Select the tile selection foreground color.">config.plugins.mediacockpit.selection_foreground_color</item>
-		<item text="Tile selection background color" description="Select the tile selection background color.">config.plugins.mediacockpit.selection_background_color</item>
 		<item text="Tile selection size offset" description="Select the tile selection size offset.">config.plugins.mediacockpit.selection_size_offset</item>
 		<item text="Tile selection font offset" description="Select the tile selection font offset.">config.plugins.mediacockpit.selection_font_offset</item>
 		<item text="Tile selection frame" description="Should a tile selection frame be displayed?">config.plugins.mediacockpit.frame</item>
-		<item text="Tile selection frame color" description="Select the tile selection frame color.">config.plugins.mediacockpit.selection_frame_color</item>
 		<item text="Create thumbnails" description="Should thumbnails be created automatically?">config.plugins.mediacockpit.create_thumbnails</item>
 		<item text="Slideshow duration" description="Select the duration for the display of a slide.">config.plugins.mediacockpit.slideshow_duration</item>
 		<item text="Slideshow animation" description="Which animation should be used for slide transitions?">config.plugins.mediacockpit.animation</item>
@@ -21,10 +16,8 @@
 		<item text="Transition quality" description="Select the transition quality. A higher quality needs more memory and preparation time (PicAniCockpit).">config.plugins.mediacockpit.transition_quality</item>
 		<item text="Ken Burns effect" description="Should pictures slowly zoom while they are shown (PicAniCockpit)?">config.plugins.mediacockpit.kenburns</item>
 		<item text="Slideshow endless loop" description="Should slideshows be run in an endless loop?">config.plugins.mediacockpit.slideshow_loop</item>
-		<item text="Picture background color" description="Select the background color for icons.">config.plugins.mediacockpit.picture_background</item>
 		<item level="1" text="Resume video at last position" description="Select whether video should be resumed at last stop position.">config.plugins.mediacockpit.movie_resume_at_last_pos</item>
 		<item level="1" text="Video start at" description="Select at which position video is started at.">config.plugins.mediacockpit.movie_start_position</item>
-		<item text="Movie date format" description="Select the date format.">config.plugins.mediacockpit.movie_date_format</item>
 		<item text="Cache directory" description="Select directory for cache database file.">config.plugins.mediacockpit.database_directory</item>
 		<item level="2" text="Log level" description="Select the debug log level.">config.plugins.mediacockpit.debug_log_level</item>
 	</setup>

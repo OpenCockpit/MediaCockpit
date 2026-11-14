@@ -34,42 +34,6 @@ msgstr ""
 msgid "Do you want to resume playback at position: %d:%02d:%02d?"
 msgstr ""
 
-msgid "DD.MM.YYYY"
-msgstr ""
-
-msgid "WD DD.MM.YYYY"
-msgstr ""
-
-msgid "DD.MM.YYYY HH:MM"
-msgstr ""
-
-msgid "WD DD.MM.YYYY HH:MM"
-msgstr ""
-
-msgid "DD.MM. HH:MM"
-msgstr ""
-
-msgid "WD DD.MM. HH:MM"
-msgstr ""
-
-msgid "YYYY/MM/DD"
-msgstr ""
-
-msgid "WD YYYY/MM/DD"
-msgstr ""
-
-msgid "YYYY/MM/DD HH:MM"
-msgstr ""
-
-msgid "WD YYYY/MM/DD HH:MM"
-msgstr ""
-
-msgid "MM/DD HH:MM"
-msgstr ""
-
-msgid "WD MM/DD HH:MM"
-msgstr ""
-
 msgid "None"
 msgstr ""
 
@@ -83,9 +47,6 @@ msgid "Alpha sort up"
 msgstr ""
 
 msgid "Alpha sort down"
-msgstr ""
-
-msgid "default"
 msgstr ""
 
 msgid "beginning"
@@ -123,30 +84,6 @@ msgstr ""
 msgid "Should a tile be displayed for navigation to the parent directory?"
 msgstr ""
 
-msgid "Tile foreground color"
-msgstr ""
-
-msgid "Select the tile foreground color."
-msgstr ""
-
-msgid "Tile background color"
-msgstr ""
-
-msgid "Select the tile background color."
-msgstr ""
-
-msgid "Tile selection foreground color"
-msgstr ""
-
-msgid "Select the tile selection foreground color."
-msgstr ""
-
-msgid "Tile selection background color"
-msgstr ""
-
-msgid "Select the tile selection background color."
-msgstr ""
-
 msgid "Tile selection size offset"
 msgstr ""
 
@@ -165,12 +102,6 @@ msgstr ""
 msgid "Should a tile selection frame be displayed?"
 msgstr ""
 
-msgid "Tile selection frame color"
-msgstr ""
-
-msgid "Select the tile selection frame color."
-msgstr ""
-
 msgid "Create thumbnails"
 msgstr ""
 
@@ -186,9 +117,6 @@ msgstr ""
 msgid "Should slideshows be run in an endless loop?"
 msgstr ""
 
-msgid "Select the background color for icons."
-msgstr ""
-
 msgid "Resume video at last position"
 msgstr ""
 
@@ -199,9 +127,6 @@ msgid "Video start at"
 msgstr ""
 
 msgid "Select at which position video is started at."
-msgstr ""
-
-msgid "Select the date format."
 msgstr ""
 
 msgid "Cache directory"
@@ -271,9 +196,6 @@ msgid "Do you really want to delete the file?"
 msgstr ""
 
 msgid "Select directory"
-msgstr ""
-
-msgid "Do you really want to load the following directory?"
 msgstr ""
 
 msgid "Can't load directory because it is not mounted."
@@ -483,13 +405,27 @@ msgstr ""
 msgid "Music player"
 msgstr ""
 
+msgid ""
+"%d entries of the playlist are not in the cache yet. Open the playlist again "
+"to add more, or load their directory with the yellow key."
+msgstr ""
+
+msgid "The file is not available."
+msgstr ""
+
+msgid "Unavailable"
+msgstr ""
+
+msgid "Load the following directory into the cache?"
+msgstr ""
+
+msgid "This directory only"
+msgstr ""
+
+msgid "This directory and all its subdirectories"
+msgstr ""
+
 msgid "Log level"
-msgstr ""
-
-msgid "Movie date format"
-msgstr ""
-
-msgid "Picture background color"
 msgstr ""
 
 msgid "Slideshow animation"

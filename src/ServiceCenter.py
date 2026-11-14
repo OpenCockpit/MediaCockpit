@@ -3,7 +3,7 @@
 
 
 import os
-from datetime import datetime
+from time import localtime, strftime
 from enigma import eServiceCenter, iServiceInformation
 from Components.config import config
 from .Debug import logger
@@ -130,8 +130,8 @@ class Info():
 
     def getBeginTimeString(self):
         logger.debug("...")
-        movie_date_format = config.plugins.mediacockpit.movie_date_format.value
-        return datetime.fromtimestamp(self.event_start_time).strftime(movie_date_format)
+        # the date and time style of the box, written like the movie list of Enigma2 does
+        return strftime(f"{config.usage.date.daylong.value}, {config.usage.time.short.value}", localtime(self.event_start_time))
 
     def getEventStartTime(self):
         logger.debug("...")

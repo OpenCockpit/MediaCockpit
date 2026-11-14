@@ -17,11 +17,19 @@ from .PixmapUtils import loadPixmap
 from .Debug import logger
 from .__init__ import _
 from .FileManagerUtils import MDC_IDX_MEDIA, MDC_IDX_PATH
-from .FileManagerUtils import MDC_MEDIA_TYPE_FILE, MDC_MEDIA_TYPE_UP, MDC_MEDIA_TYPE_DIR, MDC_MEDIA_TYPE_PLAYLIST, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE, MDC_MEDIA_TYPE_MUSIC
+from .FileManagerUtils import MDC_MEDIA_TYPE_FILE, MDC_MEDIA_TYPE_UP, MDC_MEDIA_TYPE_DIR, MDC_MEDIA_TYPE_PLAYLIST, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE, MDC_MEDIA_TYPE_MUSIC, MDC_MEDIA_TYPE_UNAVAILABLE
 from .FileListUtils import getDir
 from .PictureUtils import createThumbnail
 from .Display import Display
 from .Version import ID
+
+
+# colour roles of the skin
+TILE_NORMAL_BACKGROUND = "md_surface_container"
+TILE_NORMAL_FOREGROUND = "md_on_surface"
+TILE_SELECTION_BACKGROUND = "md_primary_container"
+TILE_SELECTION_FOREGROUND = "md_on_primary_container"
+TILE_SELECTION_FRAME = "md_primary"
 
 
 class Tiles(Display):
@@ -47,6 +55,7 @@ class Tiles(Display):
         self.icons = {}
         self.last_tile_pos = -1
         self.is_mounted = False
+        self.painted_page = None        # first file index of the page the tiles show, None: they show nothing or something stale
         self.thumbnail_size = eSize(0, 0)
         self.thumbnail_todo = []        # file indexes of the visible page whose thumbnail is still missing
         self.thumbnail_failed = set()   # pictures that could not be turned into a thumbnail: not tried again
@@ -58,16 +67,12 @@ class Tiles(Display):
     def initTileConfig(self):
         self.selection_size_offset = config.plugins.mediacockpit.selection_size_offset.value
         self.selection_font_offset = config.plugins.mediacockpit.selection_font_offset.value
-        self.normal_background_color = parseColor(
-            config.plugins.mediacockpit.normal_background_color.value)
-        self.selection_background_color = parseColor(
-            config.plugins.mediacockpit.selection_background_color.value)
-        self.normal_foreground_color = parseColor(
-            config.plugins.mediacockpit.normal_foreground_color.value)
-        self.selection_foreground_color = parseColor(
-            config.plugins.mediacockpit.selection_foreground_color.value)
-        self.selection_frame_color = parseColor(
-            config.plugins.mediacockpit.selection_frame_color.value)
+        # the colours are the Material roles of the skin (colors.ymlinc), nothing the user chooses: they change with the skin
+        self.normal_background_color = parseColor(TILE_NORMAL_BACKGROUND)
+        self.selection_background_color = parseColor(TILE_SELECTION_BACKGROUND)
+        self.normal_foreground_color = parseColor(TILE_NORMAL_FOREGROUND)
+        self.selection_foreground_color = parseColor(TILE_SELECTION_FOREGROUND)
+        self.selection_frame_color = parseColor(TILE_SELECTION_FRAME)
 
     def initTileAttribs(self):
         logger.debug("...")
@@ -97,6 +102,8 @@ class Tiles(Display):
             "images/" + "playlist.svg"), cached=True, width=self.icon_size.width(), height=self.icon_size.height())
         self.icons[MDC_MEDIA_TYPE_UP] = LoadPixmap(getSkinPath(
             "images/" + "dirup.svg"), cached=True, width=self.icon_size.width(), height=self.icon_size.height())
+        self.icons[MDC_MEDIA_TYPE_UNAVAILABLE] = LoadPixmap(getSkinPath(
+            "images/" + "unavailable.svg"), cached=True, width=self.icon_size.width(), height=self.icon_size.height())
 
         for tile_pos in range(self.tiles):
             for tile_element in ("Tile%d", "Text%d"):
@@ -177,6 +184,7 @@ class Tiles(Display):
         self.unselectTile(self.last_tile_pos)
         for tile_pos in range(self.tiles):
             self.hideTile(tile_pos)
+        self.painted_page = None
 
     def paintTile(self, idx, tile_pos):
         logger.debug("idx: %s, tile_pos: %s", idx, tile_pos)
@@ -189,7 +197,7 @@ class Tiles(Display):
         else:
             self.csel[f"Text{tile_pos}"].setText(os.path.basename(path))
         thumbnail_path = None
-        if atype != MDC_MEDIA_TYPE_UP:
+        if atype in {MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE}:
             filename, ext = os.path.splitext(path)
             for thumbnail in (filename + ".thumbnail" + ext, filename + ".thumbnail.jpg"):
                 if os.path.exists(thumbnail):
@@ -203,9 +211,12 @@ class Tiles(Display):
             self.csel[f"Picture{tile_pos}"].show()
         else:
             self.csel[f"Picture{tile_pos}"].hide()
-            self.csel[f"Icon{tile_pos}"].instance.setPixmap(
-                self.icons[atype])
-            self.csel[f"Icon{tile_pos}"].show()
+            icon = self.icons.get(atype) or self.icons.get(MDC_MEDIA_TYPE_UNAVAILABLE)
+            if icon:
+                self.csel[f"Icon{tile_pos}"].instance.setPixmap(icon)
+                self.csel[f"Icon{tile_pos}"].show()
+            else:
+                self.csel[f"Icon{tile_pos}"].hide()
             self.csel[f"Text{tile_pos}"].show()
 
     def paintTiles(self):
@@ -222,12 +233,17 @@ class Tiles(Display):
         last_idx = first_idx + self.tiles
 
         logger.debug("first_idx: %s, last_idx: %s", first_idx, last_idx)
-        for idx in range(first_idx, last_idx):
-            tile_pos = idx % self.tiles
-            if file_list_len and idx < file_list_len:
-                self.paintTile(idx, tile_pos)
-            else:
-                self.hideTile(tile_pos)
+        # A cursor move inside the page only changes the selection: repainting every tile (decoding up to 15 thumbnails) on each key
+        # press made holding a key sluggish. repaintTiles() forces it, e.g. after the list or a thumbnail changed.
+        new_page = first_idx != self.painted_page
+        if new_page:
+            for idx in range(first_idx, last_idx):
+                tile_pos = idx % self.tiles
+                if file_list_len and idx < file_list_len:
+                    self.paintTile(idx, tile_pos)
+                else:
+                    self.hideTile(tile_pos)
+            self.painted_page = first_idx
 
         tile_pos = self.file_index % self.tiles
         logger.debug("tile_pos: %s, last_tile_pos: %s",
@@ -236,7 +252,13 @@ class Tiles(Display):
         self.selectTile(tile_pos)
         self.showInfo(self.is_mounted)
         self.onSelectionChange()
-        self.queueThumbnails(first_idx, min(last_idx, file_list_len))
+        if new_page:
+            self.queueThumbnails(first_idx, min(last_idx, file_list_len))
+
+    def repaintTiles(self):
+        """paintTiles() for a list or a picture that has changed."""
+        self.painted_page = None
+        self.paintTiles()
 
 # missing thumbnails
 
@@ -283,10 +305,12 @@ class Tiles(Display):
         if self.file_list:
             afile = self.file_list[self.file_index]
             path = afile[MDC_IDX_PATH]
-            filetype = _(
-                "File") if afile[MDC_IDX_MEDIA] in MDC_MEDIA_TYPE_FILE else _("Path")
+            if afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_UNAVAILABLE:
+                filetype = _("Unavailable")
+            else:
+                filetype = _("File") if afile[MDC_IDX_MEDIA] in MDC_MEDIA_TYPE_FILE else _("Path")
         else:
-            path = self.current_dir
+            path = self.current_dir or ""
             filetype = _("Path")
         logger.debug("path: %s", path)
         page = self.file_index // self.tiles + 1

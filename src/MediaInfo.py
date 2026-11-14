@@ -17,7 +17,7 @@ from .PixmapUtils import loadPixmap
 from .__init__ import _
 from .Debug import logger
 from .FileManagerUtils import MDC_IDX_PATH, MDC_IDX_MEDIA, MDC_IDX_DATE
-from .FileManagerUtils import MDC_MEDIA_TYPE_UP, MDC_MEDIA_TYPE_DIR, MDC_MEDIA_TYPE_PLAYLIST, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE, MDC_MEDIA_TYPE_MUSIC
+from .FileManagerUtils import MDC_MEDIA_TYPE_UP, MDC_MEDIA_TYPE_DIR, MDC_MEDIA_TYPE_PLAYLIST, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE, MDC_MEDIA_TYPE_MUSIC, MDC_MEDIA_TYPE_UNAVAILABLE
 from .PictureUtils import getExifData
 from .FileUtils import deleteFile
 from .SkinUtils import getSkinPath
@@ -77,6 +77,8 @@ class MediaInfo(Screen, HelpableScreen, Display):
             getSkinPath("images/" + "folder.svg"), cached=True)
         self.icons[MDC_MEDIA_TYPE_PLAYLIST] = LoadPixmap(
             getSkinPath("images/" + "playlist.svg"), cached=True)
+        self.icons[MDC_MEDIA_TYPE_UNAVAILABLE] = LoadPixmap(
+            getSkinPath("images/" + "unavailable.svg"), cached=True)
         self.icons[MDC_MEDIA_TYPE_UP] = LoadPixmap(
             getSkinPath("images/" + "dirup.svg"), cached=True)
 
@@ -156,9 +158,12 @@ class MediaInfo(Screen, HelpableScreen, Display):
         self.displayLCD(f"{self.file_index + 1}/{len(self.file_list)}",
                         os.path.basename(self.file[MDC_IDX_PATH]))
         self["thumbnail"].hide()
-        ptr = self.icons[self.file[MDC_IDX_MEDIA]]
-        self["icon"].instance.setPixmap(ptr)
-        self["icon"].show()
+        ptr = self.icons.get(self.file[MDC_IDX_MEDIA]) or self.icons.get(MDC_MEDIA_TYPE_UNAVAILABLE)
+        if ptr:     # an icon that could not be loaded is left out, nothing fails
+            self["icon"].instance.setPixmap(ptr)
+            self["icon"].show()
+        else:
+            self["icon"].hide()
         alist = []
         alist.append((_("Directory"), os.path.dirname(
             self.file[MDC_IDX_PATH]), None))

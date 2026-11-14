@@ -44,7 +44,8 @@ def getExifData(path):
     try:
         img = Image.open(path)
         width, height = img.size
-        exif_data = img._getexif()
+        get_exif = getattr(img, "_getexif", None)    # only JPEG (and PNG) have it
+        exif_data = get_exif() if get_exif else None
     except Exception as e:
         logger.error("exception: %s", e)
     # logger.debug("exif_data: %s", str(exif_data))
