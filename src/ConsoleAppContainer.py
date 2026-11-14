@@ -20,7 +20,7 @@ class ConsoleAppContainer():
         self.runtime = 0.0
         self._start = 0.0
 
-    def execute(self, cmd):
+    def execute(self, cmd, *args):
         # a still running process would be orphaned (nobody could kill it any more) and its end would later be mistaken
         # for the end of the new one
         self.kill()
@@ -30,7 +30,7 @@ class ConsoleAppContainer():
         self.ret_val = 0
         self._start = time.monotonic()
         container.appClosed.append(self.__callback)
-        if container.execute(cmd):
+        if container.execute(cmd, *args):
             # could not even be started: appClosed will not come
             self.__callback(-1)
 

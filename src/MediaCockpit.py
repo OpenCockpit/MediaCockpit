@@ -33,6 +33,8 @@ from .Toast import Toast
 from .CockpitPlayer import CockpitPlayer
 from .CockpitMusicPlayer import CockpitMusicPlayer
 from .ServiceUtils import getService
+from .DelayTimer import DelayTimer
+from .Transcoder import Transcoder, LISTEN_DELAY
 from .ServiceCenter import ServiceCenter
 from .FileListUtils import createBookmarkEntries, createParentDirEntry, createUnavailableEntry, sortList
 from .MediaCockpitSummary import MediaCockpitSummary
@@ -69,6 +71,7 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         self.video_played = False   # set by the Slideshow when it plays a video
         self.service_center = ServiceCenter()
         self.target = ReturnTarget()    # where the tile screen goes back to when it is shown again
+        self.transcoder = Transcoder()  # converts the video that the decoder cannot play, while the player shows it
         self.closed_path = ""       # what the screen that was opened (slideshow, music player) returned
         self.sm = createListMachine(self, self.facts, logger.info)
 
@@ -287,6 +290,7 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         self.sm.dispatch("MUSIC_CLOSED")
 
     def CockpitPlayerCallback(self, _reopen=False):
+        self.transcoder.stop()
         self.sm.dispatch("MOVIE_CLOSED")
 
     # the actions of the table
@@ -343,8 +347,16 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
 
     def do_open_movie(self):
         self.hide()
-        self.session.openWithCallback(self.CockpitPlayerCallback, CockpitPlayer, getService(getPath(
-            self.file_list, self.file_index)), config.plugins.mediacockpit, True, 0, None, self.service_center)
+        path = getPath(self.file_list, self.file_index)
+        url = self.transcoder.prepare(path)
+        if url:
+            # ffmpeg needs a moment until it serves the converted video
+            DelayTimer(LISTEN_DELAY, self.openMovie, getService(url))
+        else:
+            self.openMovie(getService(path))
+
+    def openMovie(self, service):
+        self.session.openWithCallback(self.CockpitPlayerCallback, CockpitPlayer, service, config.plugins.mediacockpit, True, 0, None, self.service_center)
 
     def do_restore_after_slideshow(self):
         # the video buffer is cleared by onDialogShow() (self.show() in setTilesCursor), once, and only if a video was played

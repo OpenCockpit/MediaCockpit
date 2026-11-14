@@ -4,6 +4,7 @@
 
 from enigma import iPlayableService
 from Components.ActionMap import HelpableActionMap
+from Components.Pixmap import Pixmap
 from Components.config import config
 from Components.ServiceEventTracker import InfoBarBase, ServiceEventTracker
 from Components.Sources.COCCurrentService import COCCurrentService
@@ -12,11 +13,14 @@ from Screens.HelpMenu import HelpableScreen
 from Screens.MessageBox import MessageBox
 from Screens.InfoBarGenerics import InfoBarAudioSelection, InfoBarShowHide, InfoBarNotifications, Notifications, InfoBarSubtitleSupport
 from ServiceReference import ServiceReference
+from Tools.LoadPixmap import LoadPixmap
 from .Debug import logger
 from .__init__ import _
 from .CutList import CutList
 from .CutListUtils import ptsToSeconds, getCutListLast, getCutListFirst
 from .RecordingUtils import isRecording
+from .Transcoder import isConverted
+from .SkinUtils import getSkinPath
 from .CockpitCueSheet import CockpitCueSheet
 from .CockpitPVRState import CockpitPVRState
 from .CockpitSeek import CockpitSeek
@@ -57,6 +61,8 @@ class CockpitPlayer(
         CockpitCueSheet.__init__(self, service)
         CutList.__init__(self)
 
+        self["player_icon"] = Pixmap()      # the skin of the player has a place for it
+
         self["actions"] = HelpableActionMap(
             self,
             "CockpitActions",
@@ -83,19 +89,37 @@ class CockpitPlayer(
                              recording_start_time, timeshift, service_center)
         CockpitPVRState.__init__(self)
 
+        self.infobar_hidden = False
         self.service_started = False
         self.cut_list = []
         self.resume_point = 0
 
         self.onShown.append(self.__onShown)
+        self.onShow.append(self.__onShow)
 
     def createSummary(self):
         return CockpitPlayerSummary
 
     def __onShown(self):
         logger.info("...")
+        if self["player_icon"].instance:
+            # rasterized at the size of the widget: a vector image has no size of its own (the same as in the Common player)
+            size = self["player_icon"].instance.size()
+            self["player_icon"].instance.setPixmap(LoadPixmap(getSkinPath("images/player.svg"), cached=True, width=size.width() or 60,
+                                                              height=size.height() or 60, scaletoFit=1))
         if not self.service_started:
             self.session.nav.playService(self.service)
+
+    def __onShow(self):
+        # The session shows the screen after execBegin(), so only here a hide() is not undone: the movie starts without the
+        # infobar (OK shows it). Later shows (the infobar, a seek) are left alone.
+        if not self.infobar_hidden:
+            self.infobar_hidden = True
+            self.hide()
+
+    def serviceStarted(self):
+        # InfoBarShowHide shows the infobar when a service starts (config.usage.show_infobar_on_zap): not here, a movie is not a zap
+        self.showHideVBI()
 
     def __serviceStarted(self):
         logger.info("self.is_closing: %s", self.is_closing)
@@ -134,7 +158,9 @@ class CockpitPlayer(
 
     def leavePlayer(self):
         logger.info("...")
-        self.updateCutList(self.service.getPath(), last=self.getPosition())
+        path = self.service.getPath()
+        if not isConverted(path):     # a converted video has no file to keep a resume point for
+            self.updateCutList(path, last=self.getPosition())
         self.session.nav.stopService()
         self.close()
 

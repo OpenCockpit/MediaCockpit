@@ -14,6 +14,7 @@ from .Debug import logger
 from .FileManagerUtils import MDC_IDX_PATH
 from .ServiceUtils import getService
 from .SongQueue import SongQueue
+from .Transcoder import Transcoder, LISTEN_DELAY
 
 PTS_PER_SECOND = 90000
 
@@ -43,6 +44,7 @@ class ServicePlayer():
         self.started = False        # ... and it has shown its first frame
         self.service_active = False  # the service of a video is running and has to be stopped
         self.path = None
+        self.url = None             # where the converted video of path is served
         self.retries = 0
         self._begin = 0.0
         self.start_timer = eTimer()
@@ -51,6 +53,10 @@ class ServicePlayer():
         # (nextSlide() -> stop()) is not safe.
         self.end_timer = eTimer()
         self.end_timer.callback.append(self._callOnEnded)
+        # a video that the decoder cannot play is converted by ffmpeg, which needs a moment until it serves the stream
+        self.transcoder = Transcoder()
+        self.play_timer = eTimer()
+        self.play_timer.callback.append(self._playService)
         self.has_first_frame = hasattr(iPlayableService, "evFirstFrame")
         eventmap = {
             iPlayableService.evStart: self._evStart,
@@ -76,11 +82,20 @@ class ServicePlayer():
         self._startService()
 
     def _startService(self):
-        service = getService(self.path)
         self.started = False
         self.playing = True
         self._begin = time.monotonic()
         self.start_timer.start(self.START_TIMEOUT, True)
+        url = self.transcoder.prepare(self.path)
+        if url:
+            self.url = url
+            self.play_timer.start(LISTEN_DELAY, True)
+        else:
+            self.url = None
+            self._playService()
+
+    def _playService(self):
+        service = getService(self.url or self.path)
         # playService() reports the end of the previous service first (evEnd): _evEnd() ignores it while not started
         self.session.nav.playService(service)
         self.service_active = True
@@ -91,6 +106,8 @@ class ServicePlayer():
         self.started = False
         self.start_timer.stop()
         self.end_timer.stop()
+        self.play_timer.stop()
+        self.transcoder.stop()
         if self.service_active:
             self.service_active = False
             self.session.nav.stopService()
@@ -126,6 +143,7 @@ class ServicePlayer():
         logger.warning("no first frame within %s ms: %s", self.START_TIMEOUT, self.path)
         if not self.playing or self.started:
             return
+        self.play_timer.stop()
         self.session.nav.stopService()
         self.service_active = False
         if self.retries > 0:
@@ -139,6 +157,8 @@ class ServicePlayer():
         logger.debug("ret_val: %s, runtime: %.1f", ret_val, time.monotonic() - self._begin)
         self.playing = False
         self.start_timer.stop()
+        self.play_timer.stop()
+        self.transcoder.stop()
         self.failures = self.failures + 1 if ret_val != 0 else 0
         self.end_timer.start(10, True)
 
