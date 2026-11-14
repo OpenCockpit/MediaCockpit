@@ -18,7 +18,9 @@ sort_modes = {
     "1": SortMode(SortConfig("date", True), _("Date sort up")),
     "2": SortMode(SortConfig("alpha", False), _("Alpha sort up")),
     "3": SortMode(SortConfig("alpha", True), _("Alpha sort down")),
+    "4": SortMode(SortConfig("manual", False), _("Manual sort")),
 }
+MANUAL_SORT = "4"
 
 choices_sort = [(k, v.description) for k, v in list(sort_modes.items())]
 

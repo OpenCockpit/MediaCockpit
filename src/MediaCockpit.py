@@ -36,7 +36,9 @@ from .ServiceUtils import getService
 from .DelayTimer import DelayTimer
 from .Transcoder import Transcoder, LISTEN_DELAY
 from .ServiceCenter import ServiceCenter
-from .FileListUtils import createBookmarkEntries, createParentDirEntry, createUnavailableEntry, sortList
+from .FileListUtils import createBookmarkEntries, createParentDirEntry, createUnavailableEntry, sortList, getPosition
+from .ConfigInit import MANUAL_SORT
+from .OrderUtils import writeOrder, positionsOf, moved
 from .MediaCockpitSummary import MediaCockpitSummary
 from .FileManagerProgress import FileManagerProgress
 from .Menu import Menu
@@ -75,7 +77,7 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         self.closed_path = ""       # what the screen that was opened (slideshow, music player) returned
         self.sm = createListMachine(self, self.facts, logger.info)
 
-        self["key_red"] = Button(_("Delete file"))
+        self["key_red"] = Button(_("Exit"))
         self["key_green"] = Button(_("Home"))
         self["key_yellow"] = Button(_("Load cache directory"))
         self["key_blue"] = Button(_("Bookmarks"))
@@ -83,7 +85,9 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         self["key_menu"] = StaticText(_("MENU"))
         self["key_info"] = StaticText(_("INFO"))
         self["key_play"] = StaticText(_("PLAY"))
-        self["key_previous"] = StaticText(_("PREVIOUS"))
+        self["key_previous"] = StaticText(_("Move backward"))   # PREVIOUS / NEXT move the selected file within its folder
+        self["key_next"] = StaticText(_("Move forward"))
+        self["key_text"] = StaticText(_("Previous directory"))   # TEXT goes up one level
         self["key_0"] = StaticText(_("0"))
         self.toast = Toast(self)    # a short message inside the screen (the label "toast" of the skin)
         self.onLayoutFinish.append(self.toast.hide)
@@ -107,15 +111,17 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
                 "OK": (self.processOk, _("Ok")),
                 "INFO": (self.openInfo, _("Information")),
                 "MENU": (self.openMenu, _("Context menu")),
-                "RED": (self.deleteFile, _("Delete file")),
+                "RED": (self.exit, _("Exit")),
                 "GREEN": (self.goHome, _("Home")),
                 "YELLOW": (self.loadCacheDir, _("Load cache directory")),
                 "BLUE": (self.openBookmarks, _("Menu")),
-                "EXIT": (self.exit, _("Exit")),
+                "EXIT": (self.keyExit, _("Previous directory")),
                 "POWER": (self.exit, _("Exit")),
                 "0": (self.moveTop, _("Start of list")),
                 "8": (self.showLoadProgress, _("Show load progress")),
-                "PREVIOUS": (self.goUp, _("Previous directory")),
+                "TEXT": (self.goUp, _("Previous directory")),
+                "PREVIOUS": (self.moveBackward, _("Move file backward")),
+                "NEXT": (self.moveForward, _("Move file forward")),
             },
             prio=-1
         )
@@ -172,14 +178,7 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         logger.info("target: %s", self.target)
 
     def onSelectionChange(self):
-        logger.info("...")
-        afile = getFile(self.file_list, self.file_index)
-        if afile and afile[MDC_IDX_TYPE] == MDC_TYPE_FILE and afile[MDC_IDX_MEDIA] != MDC_MEDIA_TYPE_UNAVAILABLE:
-            logger.debug("file")
-            self["key_red"].setText(_("Delete file"))
-        else:
-            logger.debug("no file")
-            self["key_red"].setText("")
+        logger.info("...")      # the red key always leaves, there is nothing to show for the selected tile
 
     def createSummary(self):
         return MediaCockpitSummary
@@ -236,6 +235,45 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
                 self.toast.show(_("%d entries of the playlist are not in the cache yet. Open the playlist again to add more, or load their directory with the yellow key.") % len(later))
         return [files[path] if path in files else createUnavailableEntry(path) for path in paths]
 
+    def moveBackward(self):
+        self.moveEntry(-1)
+
+    def moveForward(self):
+        self.moveEntry(1)
+
+    def moveEntry(self, step):
+        """Move the selected file one place backward (-1) or forward (+1) in its folder. The order is stored in the folder (a file
+        .mediacockpit_order, see OrderUtils) and in the cache, and the folder is shown in the manual sort mode from then on. The
+        first move stores the order the files are shown in now, so that nothing else changes place."""
+        afile = getFile(self.file_list, self.file_index)
+        if not afile or afile[MDC_IDX_TYPE] != MDC_TYPE_FILE or afile[MDC_IDX_MEDIA] not in MDC_MEDIA_TYPE_FILE:
+            return      # a folder, the parent tile, a playlist or an unavailable entry has no place of its own
+        if self.playlist_path:
+            self.toast.show(_("The entries of a playlist cannot be moved."))
+            return
+        adir = self.current_dir
+        files = [entry for entry in self.file_list if entry[MDC_IDX_TYPE] == MDC_TYPE_FILE and entry[MDC_IDX_MEDIA] in MDC_MEDIA_TYPE_FILE]
+        names = [os.path.basename(entry[MDC_IDX_PATH]) for entry in files]
+        new_names = moved(names, os.path.basename(afile[MDC_IDX_PATH]), step)
+        if new_names is None:
+            self.toast.show(_("This is the first file.") if step < 0 else _("This is the last file."))
+            return
+        try:
+            writeOrder(adir, new_names)
+        except OSError as e:
+            logger.error("cannot write the order of %s: %s", adir, e)
+            self.toast.show(_("The order cannot be stored: %s") % (e.strerror or e))
+            return
+        positions = positionsOf(new_names)
+        old = {entry[MDC_IDX_PATH]: getPosition(entry) for entry in files}
+        FileManager.getInstance(ID).setPositions(
+            {path: positions[os.path.basename(path)] for path in old if old[path] != positions[os.path.basename(path)]})
+        if config.plugins.mediacockpit.sort.value != MANUAL_SORT:
+            config.plugins.mediacockpit.sort.value = MANUAL_SORT
+            config.plugins.mediacockpit.sort.save()
+            self.toast.show(_("Sort mode set to manual sort."))
+        self.readFileList(adir, afile[MDC_IDX_PATH])
+
     def goHome(self):
         self.changeDir("")
 
@@ -249,6 +287,14 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         logger.debug("current_dir: %s, up: %s", self.current_dir, target)
         if target:
             self.changeDir(*target)
+
+    def keyExit(self):
+        """EXIT goes up one folder. Only the red key leaves MediaCockpit, so that EXIT, which one presses without thinking to get
+        out of a folder, cannot leave it by accident. In the list of favorites there is no folder above: say how to leave."""
+        if self.playlist_path or parentTarget(self.current_dir, self.bookmarks):
+            self.goUp()
+        else:
+            self.toast.show(_("Press the red key to leave MediaCockpit."))
 
     def changeDir(self, target_dir, target_path=""):
         logger.debug("target_dir: %s, target_path: %s",

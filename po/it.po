@@ -415,6 +415,39 @@ msgstr "Solo questa directory"
 msgid "This directory and all its subdirectories"
 msgstr "Questa directory e tutte le sottodirectory"
 
+msgid "Manual sort"
+msgstr "Ordinamento manuale"
+
+msgid "Move backward"
+msgstr "Sposta indietro"
+
+msgid "Move forward"
+msgstr "Sposta avanti"
+
+msgid "Move file backward"
+msgstr "Sposta il file indietro"
+
+msgid "Move file forward"
+msgstr "Sposta il file avanti"
+
+msgid "The entries of a playlist cannot be moved."
+msgstr "Le voci di una playlist non possono essere spostate."
+
+msgid "This is the first file."
+msgstr "Questo è il primo file."
+
+msgid "This is the last file."
+msgstr "Questo è l'ultimo file."
+
+msgid "The order cannot be stored: %s"
+msgstr "Impossibile salvare l'ordine: %s"
+
+msgid "Sort mode set to manual sort."
+msgstr "Ordinamento impostato su manuale."
+
+msgid "Press the red key to leave MediaCockpit."
+msgstr "Premere il tasto rosso per uscire da MediaCockpit."
+
 msgid "Infobar/Play"
 msgstr ""
 

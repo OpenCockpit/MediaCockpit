@@ -425,6 +425,39 @@ msgstr ""
 msgid "This directory and all its subdirectories"
 msgstr ""
 
+msgid "Manual sort"
+msgstr ""
+
+msgid "Move backward"
+msgstr ""
+
+msgid "Move forward"
+msgstr ""
+
+msgid "Move file backward"
+msgstr ""
+
+msgid "Move file forward"
+msgstr ""
+
+msgid "The entries of a playlist cannot be moved."
+msgstr ""
+
+msgid "This is the first file."
+msgstr ""
+
+msgid "This is the last file."
+msgstr ""
+
+msgid "The order cannot be stored: %s"
+msgstr ""
+
+msgid "Sort mode set to manual sort."
+msgstr ""
+
+msgid "Press the red key to leave MediaCockpit."
+msgstr ""
+
 msgid "Log level"
 msgstr ""
 

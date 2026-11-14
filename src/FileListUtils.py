@@ -9,7 +9,7 @@ from Components.config import config
 from Plugins.SystemPlugins.CacheCockpit.FileManager import FileManager
 from .Debug import logger
 from .FileManagerUtils import MDC_TYPE_DIR, MDC_TYPE_FILE, MDC_TYPE_LINK
-from .FileManagerUtils import MDC_IDX_TYPE, MDC_IDX_PATH, MDC_IDX_MEDIA, MDC_IDX_META, MDC_IDX_DATE
+from .FileManagerUtils import MDC_IDX_TYPE, MDC_IDX_PATH, MDC_IDX_MEDIA, MDC_IDX_META, MDC_IDX_DATE, MDC_IDX_POSITION
 from .FileManagerUtils import MDC_MEDIA_TYPE_FILE, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE, MDC_MEDIA_TYPE_MUSIC, MDC_MEDIA_TYPE_DIR, MDC_MEDIA_TYPE_UP, MDC_MEDIA_TYPE_UNAVAILABLE
 from .ConfigInit import sort_modes
 from .Version import ID
@@ -96,6 +96,14 @@ def splitMediaSongList(file_list):
     return media_list, song_list
 
 
+NOT_IN_ORDER = 1 << 30
+
+
+def getPosition(afile):
+    """Place of a list entry in the manual order of its folder, 0 if it has none (also for an entry of an older cache)."""
+    return afile[MDC_IDX_POSITION] if len(afile) > MDC_IDX_POSITION else 0
+
+
 def sortList(file_list):
     file_list_sort = config.plugins.mediacockpit.sort.value
     sort_across_dirs = config.plugins.mediacockpit.sort_across_dirs.value
@@ -123,6 +131,10 @@ def sortList(file_list):
         else:
             file_list.sort(key=lambda afile: (
                 min(afile[MDC_IDX_MEDIA], MDC_MEDIA_TYPE_PICTURE), afile[MDC_IDX_DATE]))
+    elif mode == "manual":
+        # the files of the order file of the folder first, in its order; the others after them by date and name
+        file_list.sort(key=lambda afile: (min(afile[MDC_IDX_MEDIA], MDC_MEDIA_TYPE_PICTURE), getPosition(afile) or NOT_IN_ORDER,
+                                          afile[MDC_IDX_DATE], afile[MDC_IDX_PATH].lower()))
     return file_list
 
 

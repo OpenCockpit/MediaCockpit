@@ -21,6 +21,7 @@ class Menu():
             (f"{_('Load cache directory')}", "load_cache_dir"),
             (f"{_('Load cache bookmark')}", "load_cache_bookmark"),
             (f"{_('Show load progress')}", "show_load_progress"),
+            (f"{_('Delete file')}", "delete_file"),
             (f"{_('Setup')}", "open_setup"),
             (f"{_('About')}", "about")
         ]
@@ -45,6 +46,8 @@ class Menu():
                 self.loadCacheBookmark()
             elif screen == "show_load_progress":
                 self.session.open(FileManagerProgress, FILE_OP_LOAD)
+            elif screen == "delete_file":
+                self.deleteFile()
             elif screen == "open_setup":
                 self.openConfigScreen()
             elif screen == "about":
