@@ -26,11 +26,12 @@ from .Debug import logger
 from .PictureUtils import getPicturePath, getExifData, rotatePicture, setExifOrientation
 from .PixmapUtils import loadPixmap
 from .FileManagerUtils import MDC_IDX_MEDIA, MDC_IDX_PATH
-from .FileManagerUtils import MDC_MEDIA_TYPE_FILE, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE
+from .FileManagerUtils import MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE
 from .MediaInfo import MediaInfo
 from .DelayTimer import DelayTimer
 from .FileUtils import deleteFile
 from .SlideshowPlayers import ServicePlayer, BackgroundMusic
+from .SlideshowStates import createSlideshowMachine, RUNNING, PICTURE, MOVIE, OTHER
 from .FileListUtils import previousIndex, nextIndex, findMediaIndex, getPath
 from .ConfigInit import pic_slideshow_animations
 from .Thumbnail import Thumbnail
@@ -43,12 +44,15 @@ INFO_TOAST_TIMEOUT = 5      # seconds the picture number and name stay on the sc
 
 
 class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
+    """The slideshow and the picture viewer. What a key or a timer does is decided by the table in SlideshowStates.py: this
+    class turns keys, timers and player events into events of that table (self.sm.dispatch) and performs its actions
+    (the do_<action> methods)."""
 
     def __init__(self, session, csel, file_list, file_index, start_slideshow=False, song_list=None):
         logger.info("file_index: %s, start_slideshow: %s, file_list: %s, song_list: %s",
                     file_index, start_slideshow, file_list, song_list)
         self.csel = csel
-        self.slideshow_active = False
+        self.sm = createSlideshowMachine(self, self.facts, logger.info)
         self.info_line = ""     # number and name of the picture, what the header shows
         self.start_slideshow = start_slideshow
         self["key_red"] = Button(_("Exit"))
@@ -68,19 +72,19 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
             self,
             "CockpitActions",
             {
-                "OK": (self.toggleButtons, _("Toggle buttons")),
-                "INFO": (self.openInfo, _("Information")),
-                "PLAY": (self.playpause, _("Play/Pause") + " " + _("Slideshow")),
-                "STOP": (self.stop, _("Stop video/slideshow")),
-                "NEXT": (self.right, _("Next picture")),
-                "RIGHTR": (self.right, _("Next picture")),
-                "PREVIOUS": (self.left, _("Previous picture")),
-                "LEFTR": (self.left, _("Previous picture")),
-                "EXIT": (self.exit, _("Exit")),
-                "RED": (self.exit, _("Exit")),
-                "GREEN": (self.playpause, _("Slideshow")),
-                "YELLOW": (self.yellow, _("Rotate picture")),
-                "BLUE": (self.toggleTransitionMode, _("Toggle transition")),
+                "OK": (self.keyOk, _("Toggle buttons")),
+                "INFO": (self.keyInfo, _("Information")),
+                "PLAY": (self.keyPlay, _("Play/Pause") + " " + _("Slideshow")),
+                "STOP": (self.keyStop, _("Stop video/slideshow")),
+                "NEXT": (self.keyNext, _("Next picture")),
+                "RIGHTR": (self.keyNext, _("Next picture")),
+                "PREVIOUS": (self.keyPrevious, _("Previous picture")),
+                "LEFTR": (self.keyPrevious, _("Previous picture")),
+                "EXIT": (self.keyExit, _("Exit")),
+                "RED": (self.keyExit, _("Exit")),
+                "GREEN": (self.keyPlay, _("Slideshow")),
+                "YELLOW": (self.keyYellow, _("Rotate picture")),
+                "BLUE": (self.keyBlue, _("Toggle transition")),
             },
             prio=-1
         )
@@ -107,13 +111,14 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         self.direction = True
         self.desktop_size = getDesktop(0).size()
         self.slide_timer = eTimer()
-        self.slide_timer.callback.append(self.nextSlide)
+        self.slide_timer.callback.append(self.slideTimerExpired)
         self.show_timer = None      # DelayTimer of the slide that is about to be shown
         self.manual_navigation = False  # the slide about to be shown was selected with a key, not by the slideshow timer
+        self.previous_file = None   # the file that was shown before the current one
 
         # enigma2 plays the videos, with their sound, and the background music. Only one service plays at a time: the music is
         # suspended while a movie plays and goes on after it.
-        self.video = ServicePlayer(self, self.showVideoCallback, self.videoStarted)
+        self.video = ServicePlayer(self, self.videoEnded, self.videoStarted)
         self.music = BackgroundMusic(self, self.song_list)
 
         for animation in self.slideshow_animations:
@@ -122,10 +127,78 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
                 break
         logger.debug("animation: %s", self.animation)
 
-        self.onLayoutFinish.append(self.__onLayoutFinish)
+        self.onLayoutFinish.append(self.onLayoutDone)
 
     def createSummary(self):
         return MediaCockpitSummary
+
+    @property
+    def slideshow_active(self):
+        return self.sm.state["run"] == RUNNING
+
+    def facts(self):
+        """What the table asks for when an event comes in."""
+        count = len(self.file_list)
+        media = self.file[MDC_IDX_MEDIA] if self.file else None
+        loop = config.plugins.mediacockpit.slideshow_loop.value
+        return {
+            "content": PICTURE if media == MDC_MEDIA_TYPE_PICTURE else MOVIE if media == MDC_MEDIA_TYPE_MOVIE else OTHER,
+            "at_end": not loop and self.file_index == (count - 1 if self.direction else 0),
+            "at_end_forward": not loop and self.file_index == count - 1,
+            "at_end_back": not loop and self.file_index == 0,
+            "picani": self.picani,
+            "all_failed": self.video.failures >= count,
+            "has_media": findMediaIndex(self.file_list) >= 0,
+            "autostart": self.start_slideshow,
+        }
+
+    # keys, timers and player events: all of them are events of the table
+
+    def keyOk(self):
+        self.sm.dispatch("OK")
+
+    def keyInfo(self):
+        self.sm.dispatch("INFO")
+
+    def keyPlay(self):
+        self.sm.dispatch("PLAY")
+
+    def keyStop(self):
+        self.sm.dispatch("STOP")
+
+    def keyNext(self):
+        self.sm.dispatch("NEXT")
+
+    def keyPrevious(self):
+        self.sm.dispatch("PREV")
+
+    def keyExit(self):
+        self.sm.dispatch("EXIT")
+
+    def keyYellow(self):
+        self.sm.dispatch("YELLOW")
+
+    def keyBlue(self):
+        self.sm.dispatch("BLUE")
+
+    def onLayoutDone(self):
+        self.sm.dispatch("LAYOUT_DONE")
+
+    def slideTimerExpired(self):
+        self.sm.dispatch("TIMER")
+
+    def videoStarted(self):
+        self.sm.dispatch("VIDEO_STARTED")
+
+    def videoEnded(self):
+        """The video ended on its own (a stopped or skipped one never gets here)."""
+        self.sm.dispatch("VIDEO_ENDED")
+
+    def imageChanged(self):
+        self.sm.dispatch("IMAGE_CHANGED")
+
+    # The actions of the table (SlideshowStates.py). Each one does one small thing; which of them a key leads to is decided
+    # by the table, not here.
 
     def showButtons(self):
         """The picture moves into the body of the window, the header and the footer with the keys become visible.
@@ -153,48 +226,68 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         self["picture_background"].show()
         self["osd_info"].hide()
 
-    def toggleButtons(self):
-        if self.desktop_size.width() == self["picture"].instance.size().width():
-            self.showButtons()
-        else:
-            self.hideButtons()
-            self.toast.hide()       # the line of showButtons() while the slideshow runs
+    def do_show_chrome(self):
+        self.showButtons()
 
-    def __onLayoutFinish(self):
+    def do_hide_chrome(self):
+        self.hideButtons()
+
+    def do_hide_toast(self):
+        self.toast.hide()       # the line of showButtons() while the slideshow runs
+
+    # the screen
+
+    def do_prepare(self):
+        """The first thing after the layout: the first file, the colours, the transition engine."""
         logger.debug("...")
         self.toast.hide()
-        if findMediaIndex(self.file_list) >= 0:
-            self.hideButtons()
-            self.file = self.file_list[self.file_index]
-            self.background_color = parseColor(PICTURE_BACKGROUND)
-            self["picture_background"].instance.setBackgroundColor(
-                self.background_color)
-            self["picture_background"].instance.invalidate()
-            self.slideshow_duration = config.plugins.mediacockpit.slideshow_duration.value * 1000
-            if self.picani:
-                self["image"].setTransitionDuration(int(config.plugins.mediacockpit.transition_duration.value))
-                self["image"].setQuality(config.plugins.mediacockpit.transition_quality.value)
-                self["image"].setBackground(self.background_color)
-                self["image"].setKenBurns(config.plugins.mediacockpit.kenburns.value, self.slideshow_duration)
-            self.setSlideshowAnimation(self.animation)
-            if self.start_slideshow:
-                self["image"].show()
-                self.start_slideshow = False
-                if self.song_list:
-                    self["image"].hide()
-                    self.music.start()
-                self.playpause()
-            else:
-                self["image"].hide()
-                self.showSlide()
-        else:
-            # nothing to show (empty list or no picture/movie in it): without this the slideshow would skip forever
-            self.close(getPath(self.file_list, self.file_index))
+        self.hideButtons()
+        self.file = self.file_list[self.file_index]
+        self.background_color = parseColor(PICTURE_BACKGROUND)
+        self["picture_background"].instance.setBackgroundColor(
+            self.background_color)
+        self["picture_background"].instance.invalidate()
+        self.slideshow_duration = config.plugins.mediacockpit.slideshow_duration.value * 1000
+        if self.picani:
+            self["image"].setTransitionDuration(int(config.plugins.mediacockpit.transition_duration.value))
+            self["image"].setQuality(config.plugins.mediacockpit.transition_quality.value)
+            self["image"].setBackground(self.background_color)
+            self["image"].setKenBurns(config.plugins.mediacockpit.kenburns.value, self.slideshow_duration)
+        self.setSlideshowAnimation(self.animation)
+        self.start_slideshow = False   # the autostart is used up: openInfoCallback() lays the screen out again
 
-    def setSlideshowAnimation(self, animation):
-        logger.debug("animation: %s", animation)
-        if self.picani and str(animation) in [a[0] for a in self.slideshow_animations]:
-            self["image"].setTransitionMode(animation)
+    def do_close_empty(self):
+        # nothing to show (empty list or no picture/movie in it): without this the slideshow would skip forever
+        self.toast.hide()
+        self.close(getPath(self.file_list, self.file_index))
+
+    def do_show_screen(self):
+        self.show()
+
+    def do_hide_screen(self):
+        if self.execing:
+            self.hide()
+        else:
+            # The first slide is started from onLayoutFinish, before the session shows the screen: a hide() now is undone by that
+            # show(), and the picture background would cover the video (black first video).
+            DelayTimer(1, self.hide)
+
+    def do_image_show(self):
+        self["image"].show()
+
+    def do_image_hide(self):
+        self["image"].hide()
+
+    def do_hide_picture(self):
+        self.hidePicture()
+
+    def do_clear_picture(self):
+        # The pictures must be gone when the screen shows again after the video: the next picture is cut in, not faded from the old
+        # one, and the old one is not seen for a moment.
+        self["picture"].instance.setPixmap(gPixmapPtr())
+
+    def do_lcd_info(self):
+        self.showLCDInfo()
 
     def showLCDInfo(self):
         path = self.file[MDC_IDX_PATH]
@@ -208,90 +301,110 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         self.info_line = f"{_('Slideshow')}: {self.file_index + 1}/{len(self.file_list)} - {os.path.basename(path)}"
         self.displayOSD(self.info_line)
 
-# slide functions
-
-    def atLastSlide(self):
-        return self.file_index == (len(self.file_list) - 1 if self.direction else 0)
-
-    def endSlideshow(self, text=None):
-        """The running slideshow reached its last picture and "Slideshow endless loop" is off (or it cannot go on)."""
+    def do_toast_end(self):
         logger.info("end of slideshow")
-        self.slideshow_active = False
-        self.slide_timer.stop()
-        self.cancelShow()
-        self.music.resume()     # the last slide was a movie: the music goes on until the screen is left
-        if self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MOVIE:
-            # the screen is hidden while a video plays: bring it back, or only a black picture would be left
-            self.show()
-            self.showButtons()
-        self.showLCDInfo()
-        self.toast.show(text or _("End of slideshow"))
+        self.toast.show(_("End of slideshow"))
 
-    def cancelShow(self):
-        """Forget a slide that is waiting for its delay: every navigation would otherwise queue one more showSlide() and
-        a video would be started several times."""
+    def do_toast_video_failed(self):
+        logger.info("end of slideshow: no video can be played")
+        self.toast.show(_("Video cannot be played"))
+
+    def do_stop_toast(self):
+        self.toast.stop()
+
+    # the slides
+
+    def do_stop_slide_timer(self):
+        self.slide_timer.stop()
+
+    def do_arm_slide_timer(self):
+        self.slide_timer.start(self.slideshow_duration, True)
+
+    def do_cancel_pending(self):
+        """Forget a slide that is waiting for its delay: every navigation would otherwise queue one more slide and a video
+        would be started several times."""
         if self.show_timer is not None:
             self.show_timer.stop()
             self.show_timer = None
 
-    def nextSlide(self):
-        self.slide_timer.stop()
-        self.cancelShow()
-        self.stopVideo()
-        if self.slideshow_active and not config.plugins.mediacockpit.slideshow_loop.value and self.atLastSlide():
-            self.endSlideshow()
-            return
+    def do_go_forward(self):
+        self.direction = True
+        self.manual_navigation = True
+
+    def do_go_back(self):
+        self.direction = False
+        self.manual_navigation = True
+
+    def do_advance(self):
+        """The next file in the direction of the slideshow becomes the current one."""
         if self.direction:
             self.file_index = nextIndex(self.file_index, len(self.file_list))
         else:
-            self.file_index = previousIndex(
-                self.file_index, len(self.file_list))
-        logger.info("***************   %s   ******************",
-                    self.file_index)
-        previous, self.file = self.file, self.file_list[self.file_index]
-        if previous[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MOVIE:
+            self.file_index = previousIndex(self.file_index, len(self.file_list))
+        logger.info("***************   %s   ******************", self.file_index)
+        self.previous_file, self.file = self.file, self.file_list[self.file_index]
+        if self.previous_file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MOVIE:
             self.show()     # the screen was hidden for the video: cover the video plane at once, not after the delay below
+
+    def do_schedule_slide(self):
         # The delay lets the video player or the black frame (showiframe) finish before the next slide starts. Between two
         # pictures with PicAniCockpit it would only stretch the hold time: the transition has been prepared long ago.
-        if self.picani and MDC_MEDIA_TYPE_MOVIE not in (previous[MDC_IDX_MEDIA], self.file[MDC_IDX_MEDIA]):
-            self.showSlide()
+        if self.picani and MDC_MEDIA_TYPE_MOVIE not in (self.previous_file[MDC_IDX_MEDIA], self.file[MDC_IDX_MEDIA]):
+            self.sm.dispatch("SHOW_SLIDE")
         else:
-            self.show_timer = DelayTimer(500, self.showSlide)
+            self.show_timer = DelayTimer(500, self.slideDelayOver)
 
-    def showSlide(self):
+    def slideDelayOver(self):
         self.show_timer = None
-        logger.info("file_index: %s, len(self.file_list): %s, media: %s",
-                    self.file_index, len(self.file_list), self.file[MDC_IDX_MEDIA])
-        self.hideButtons()
-        if self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PICTURE:
-            self.video.failures = 0
-            self.music.resume()     # after a movie: the music goes on where it was interrupted
-            self.show()
-            manual, self.manual_navigation = self.manual_navigation, False
-            path = getPicturePath(self.file[MDC_IDX_PATH])  # same file as showPicture(): a rotated copy wins
-            shown = False
-            if self.picani and self.slideshow_active:
-                self["image"].show()
-                # fast: after a key press the picture is cut in as soon as it is decoded unless it was prepared already
-                shown = self["image"].setPicture(path, self.direction, manual)
-            if not shown:
-                if self.picani:
-                    self["image"].hide()  # also forgets the old picture: the next slideshow picture is cut in, not faded from it
-                self.unhidePicture()
-                self.showPicture(self.file[MDC_IDX_PATH])
-            if self.slideshow_active:
-                self.slide_timer.start(self.slideshow_duration, True)
-        elif self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MOVIE:
-            # Neither the screen nor the last picture are taken away yet: until the video has its first frame (videoStarted()) the
-            # video plane would show what it held before, for a moment. The picture, or the dark background, covers that.
-            self.music.suspend()    # the movie has its own sound and needs the service
-            self.showVideo(self.file[MDC_IDX_PATH])
-        else:
-            logger.debug("skip slide: %s", self.file[MDC_IDX_MEDIA])
-            self.nextSlide()
-        self.showLCDInfo()
+        self.sm.dispatch("SHOW_SLIDE")
 
-# picture functions
+    def do_reset_failures(self):
+        self.video.failures = 0
+
+    def do_display_picture(self):
+        logger.info("file_index: %s, len(self.file_list): %s", self.file_index, len(self.file_list))
+        manual, self.manual_navigation = self.manual_navigation, False
+        path = getPicturePath(self.file[MDC_IDX_PATH])  # same file as showPicture(): a rotated copy wins
+        shown = False
+        if self.picani and self.slideshow_active:
+            self["image"].show()
+            # fast: after a key press the picture is cut in as soon as it is decoded unless it was prepared already
+            shown = self["image"].setPicture(path, self.direction, manual)
+        if not shown:
+            if self.picani:
+                self["image"].hide()  # also forgets the old picture: the next slideshow picture is cut in, not faded from it
+            self.unhidePicture()
+            self.showPicture(self.file[MDC_IDX_PATH])
+
+    def do_restore_picture(self):
+        """The slideshow was paused: the viewer's picture is gone with hide(), and imageChanged() had hidden the plain picture
+        widget."""
+        if self.picani and self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PICTURE:
+            self.unhidePicture()
+            self.showPicture(self.file[MDC_IDX_PATH])
+
+    def do_prepare_next(self):
+        """PicAniCockpit decodes and bakes the next picture during the hold time, so its transition starts at once. This is
+        called when a transition has finished: a running one owns the layers."""
+        loop = config.plugins.mediacockpit.slideshow_loop.value
+        index = self.file_index
+        for _i in range(len(self.file_list)):
+            if not loop and index == (len(self.file_list) - 1 if self.direction else 0):
+                return
+            index = nextIndex(index, len(self.file_list)) if self.direction else previousIndex(index, len(self.file_list))
+            afile = self.file_list[index]
+            if afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PICTURE:
+                self["image"].prepare(getPicturePath(afile[MDC_IDX_PATH]), self.direction)
+                return
+            if afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MOVIE:
+                return  # a video comes next: nothing to prepare
+
+    def setSlideshowAnimation(self, animation):
+        logger.debug("animation: %s", animation)
+        if self.picani and str(animation) in [a[0] for a in self.slideshow_animations]:
+            self["image"].setTransitionMode(animation)
+
+    # picture functions
 
     def showPicture(self, path):
         logger.info("path: %s, index: %s", path, self.file_index)
@@ -311,57 +424,40 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
         self["picture"].show()
         self["picture_background"].show()
 
-# video functions
+    # videos and music
 
-    def showVideo(self, filename):
+    def do_start_video(self):
+        filename = self.file[MDC_IDX_PATH]
         logger.info("filename: %s", filename)
-        if self.video.running():
-            logger.debug("already playing")
-            return
         self.csel.video_played = True   # MediaCockpit has to clear the video plane when it comes back
         self.video.play(filename)
 
-    def videoStarted(self):
-        """The video has its first frame: the picture goes and the screen is hidden, so that the video plane is seen."""
-        if self.file[MDC_IDX_MEDIA] != MDC_MEDIA_TYPE_MOVIE or not self.video.running():
-            return
-        # The pictures must be gone when the screen shows again after the video: the next picture is cut in, not faded from the old
-        # one, and the old one is not seen for a moment.
-        self["picture"].instance.setPixmap(gPixmapPtr())
-        if self.picani:
-            self["image"].hide()
-        if self.execing:
-            self.hide()
-        else:
-            # The first slide is started from onLayoutFinish, before the session shows the screen: a hide() now is undone by that
-            # show(), and the picture background would cover the video (black first video).
-            DelayTimer(1, self.hide)
-
-    def showVideoCallback(self):
-        """The video ended on its own (a stopped or skipped one never gets here)."""
-        logger.debug("slideshow_active: %s, failures: %s", self.slideshow_active, self.video.failures)
-        if self.slideshow_active:
-            if self.video.failures >= len(self.file_list):
-                # every slide failed in a row: carrying on would spin forever
-                self.endSlideshow(_("Video cannot be played"))
-                return
-            self.nextSlide()
-
-    def videoStopped(self):
-        """STOP on a video: carry on with the next slide when the slideshow runs."""
-        if self.slideshow_active:
-            self.nextSlide()
-        else:
-            self.music.resume()     # no next slide to bring the music back
-
-    def stopVideo(self):
+    def do_stop_video(self):
         if self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MOVIE:
             logger.debug("media: %s", self.file[MDC_IDX_MEDIA])
             self.video.stop()
 
-# external slideshow
+    def do_delay_video_stopped(self):
+        DelayTimer(250, self.sm.dispatch, "VIDEO_STOPPED")
 
-    def toggleTransitionMode(self):
+    def do_music_start(self):
+        self.music.start()
+
+    def do_music_suspend(self):
+        self.music.suspend()    # the movie has its own sound and needs the service
+
+    def do_music_resume(self):
+        self.music.resume()     # after a movie: the music goes on where it was interrupted
+
+    def do_stop_music(self):
+        self.music.stop()
+
+    def do_stop_delays(self):
+        DelayTimer.stopAll()
+
+    # transitions
+
+    def do_toggle_transition(self):
         if not self.picani:
             self.toast.show(_("Transitions need PicAniCockpit"))
             return
@@ -379,29 +475,17 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
                 break
         self.toast.show(_("Animation") + " " + str(self.animation) + ": " + sanimation)
 
-    def imageChanged(self):
-        logger.debug("...")
-        self.hidePicture()
-        if self.picani and self.slideshow_active:
-            self.prepareNext()
+    def do_save_animation(self):
+        if self.picani:  # without it the list holds only a placeholder, which must not replace the saved choice
+            config.plugins.mediacockpit.animation.value = str(self.animation)
+            config.plugins.mediacockpit.animation.save()
 
-    def prepareNext(self):
-        """PicAniCockpit decodes and bakes the next picture during the hold time, so its transition starts at once. This is
-        called when a transition has finished: a running one owns the layers."""
-        loop = config.plugins.mediacockpit.slideshow_loop.value
-        index = self.file_index
-        for _i in range(len(self.file_list)):
-            if not loop and index == (len(self.file_list) - 1 if self.direction else 0):
-                return
-            index = nextIndex(index, len(self.file_list)) if self.direction else previousIndex(index, len(self.file_list))
-            afile = self.file_list[index]
-            if afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PICTURE:
-                self["image"].prepare(getPicturePath(afile[MDC_IDX_PATH]), self.direction)
-                return
-            if afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MOVIE:
-                return  # a video comes next: nothing to prepare
+    # rotating
 
-# picture functions
+    def do_rotate_picture(self):
+        self.toast.show(_("Rotating picture..."))
+        # rotating blocks the main loop for a while: give the toast a chance to be painted first
+        DelayTimer(100, self.rotatePicture, self.file)
 
     def rotatePicture(self, afile):
         logger.debug("afile: %s", afile)
@@ -446,70 +530,17 @@ class Slideshow(Screen, Thumbnail, Display, HelpableScreen):
                 self.unhidePicture()
             self.showPicture(path)
 
-# key functions
+    # information screen, leaving
 
-    def exit(self):
-        self.slide_timer.stop()
-        self.toast.stop()
-        DelayTimer.stopAll()
-        self.stopVideo()
-        self.music.stop()
-        if self.picani:  # without it the list holds only a placeholder, which must not replace the saved choice
-            config.plugins.mediacockpit.animation.value = str(self.animation)
-            config.plugins.mediacockpit.animation.save()
-        path = self.file[MDC_IDX_PATH]
-        logger.debug("file_index: %s, path: %s", self.file_index, path)
-        self.close(path)
-
-    def yellow(self):
-        if self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PICTURE:
-            self.toast.show(_("Rotating picture..."))
-            # rotating blocks the main loop for a while: give the toast a chance to be painted first
-            DelayTimer(100, self.rotatePicture, self.file)
-
-    def right(self):
-        self.direction = True
-        self.manual_navigation = True
-        self.nextSlide()
-
-    def left(self):
-        self.direction = False
-        self.manual_navigation = True
-        self.nextSlide()
-
-    def stop(self):
-        if self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MOVIE:
-            self.stopVideo()
-            DelayTimer(250, self.videoStopped)
-        else:
-            self.slideshow_active = False
-            self.slide_timer.stop()
-            self.showLCDInfo()
-
-    def playpause(self):
-        logger.debug("...")
-        self.slideshow_active = not self.slideshow_active
-        self.cancelShow()
-        if self.slideshow_active:
-            self.hideButtons()
-            self["image"].show()
-            self.showSlide()
-        else:
-            self.slide_timer.stop()
-            self.stopVideo()
-            self.music.resume()     # a movie was stopped: the music goes on (no effect when none was playing)
-            self.showLCDInfo()
-            self["image"].hide()
-            if self.picani and self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PICTURE:
-                # the viewer's picture is gone with hide(), and imageChanged() had hidden the plain picture widget
-                self.unhidePicture()
-                self.showPicture(self.file[MDC_IDX_PATH])
-
-    def openInfo(self):
-        if not self.slideshow_active and self.file[MDC_IDX_MEDIA] in MDC_MEDIA_TYPE_FILE:
-            self.session.openWithCallback(
-                self.openInfoCallback, MediaInfo, self.csel, self.file_list, self.file_index)
+    def do_open_info(self):
+        self.session.openWithCallback(
+            self.openInfoCallback, MediaInfo, self.csel, self.file_list, self.file_index)
 
     def openInfoCallback(self, file_index):
         self.file_index = file_index
-        self.__onLayoutFinish()
+        self.sm.dispatch("LAYOUT_DONE")
+
+    def do_close(self):
+        path = self.file[MDC_IDX_PATH]
+        logger.debug("file_index: %s, path: %s", self.file_index, path)
+        self.close(path)

@@ -27,9 +27,21 @@ from .Version import ID
 # colour roles of the skin
 TILE_NORMAL_BACKGROUND = "md_surface_container"
 TILE_NORMAL_FOREGROUND = "md_on_surface"
-TILE_SELECTION_BACKGROUND = "md_primary_container"
-TILE_SELECTION_FOREGROUND = "md_on_primary_container"
-TILE_SELECTION_FRAME = "md_primary"
+# the selected tile is the inverse selection of the lists of MaterialSkinCockpit: light grey, with dark blue text, frame and icon
+TILE_SELECTION_BACKGROUND = "md_inverse_surface"
+TILE_SELECTION_FOREGROUND = "md_inverse_on_surface"
+TILE_SELECTION_FRAME = "md_inverse_primary"
+# the icon of a tile, and the same icon on the selected tile (dark blue, like dir_selected.svg of the lists); files of images/
+# (the names are literals: the tool that copies the pictures of the skin looks for them)
+TILE_ICONS = (
+    (MDC_MEDIA_TYPE_PICTURE, "picture.svg", "picture_selected.svg"),
+    (MDC_MEDIA_TYPE_MOVIE, "movie.svg", "movie_selected.svg"),
+    (MDC_MEDIA_TYPE_MUSIC, "music.svg", "music_selected.svg"),
+    (MDC_MEDIA_TYPE_DIR, "folder.svg", "folder_selected.svg"),
+    (MDC_MEDIA_TYPE_PLAYLIST, "playlist.svg", "playlist_selected.svg"),
+    (MDC_MEDIA_TYPE_UP, "dirup.svg", "dirup_selected.svg"),
+    (MDC_MEDIA_TYPE_UNAVAILABLE, "unavailable.svg", "unavailable_selected.svg"),
+)
 
 
 class Tiles(Display):
@@ -53,6 +65,8 @@ class Tiles(Display):
             self.csel[f"Text{tile_pos}"] = Label()
 
         self.icons = {}
+        self.selected_icons = {}
+        self.tile_icon_type = {}      # tile position -> media type of the icon it shows (no entry: it shows a thumbnail or nothing)
         self.last_tile_pos = -1
         self.is_mounted = False
         self.painted_page = None        # first file index of the page the tiles show, None: they show nothing or something stale
@@ -89,21 +103,12 @@ class Tiles(Display):
             config.plugins.mediacockpit.thumbnail_size_width.save()
             config.plugins.mediacockpit.thumbnail_size_height.value = self.thumbnail_size.height()
             config.plugins.mediacockpit.thumbnail_size_height.save()
-        self.icons[MDC_MEDIA_TYPE_PICTURE] = LoadPixmap(getSkinPath(
-            "images/" + "picture.svg"), cached=True, width=self.icon_size.width(), height=self.icon_size.height())
-        logger.info("...")
-        self.icons[MDC_MEDIA_TYPE_MOVIE] = LoadPixmap(getSkinPath(
-            "images/" + "movie.svg"), cached=True, width=self.icon_size.width(), height=self.icon_size.height())
-        self.icons[MDC_MEDIA_TYPE_MUSIC] = LoadPixmap(getSkinPath(
-            "images/" + "music.svg"), cached=True, width=self.icon_size.width(), height=self.icon_size.height())
-        self.icons[MDC_MEDIA_TYPE_DIR] = LoadPixmap(getSkinPath(
-            "images/" + "folder.svg"), cached=True, width=self.icon_size.width(), height=self.icon_size.height())
-        self.icons[MDC_MEDIA_TYPE_PLAYLIST] = LoadPixmap(getSkinPath(
-            "images/" + "playlist.svg"), cached=True, width=self.icon_size.width(), height=self.icon_size.height())
-        self.icons[MDC_MEDIA_TYPE_UP] = LoadPixmap(getSkinPath(
-            "images/" + "dirup.svg"), cached=True, width=self.icon_size.width(), height=self.icon_size.height())
-        self.icons[MDC_MEDIA_TYPE_UNAVAILABLE] = LoadPixmap(getSkinPath(
-            "images/" + "unavailable.svg"), cached=True, width=self.icon_size.width(), height=self.icon_size.height())
+        self.icons = {}
+        self.selected_icons = {}
+        width, height = self.icon_size.width(), self.icon_size.height()
+        for atype, name, selected_name in TILE_ICONS:
+            self.icons[atype] = LoadPixmap(getSkinPath("images/" + name), cached=True, width=width, height=height)
+            self.selected_icons[atype] = LoadPixmap(getSkinPath("images/" + selected_name), cached=True, width=width, height=height)
 
         for tile_pos in range(self.tiles):
             for tile_element in ("Tile%d", "Text%d"):
@@ -151,6 +156,7 @@ class Tiles(Display):
             self.csel[f"Text{tile_pos}"].move(
                 ePoint(pos.x(), pos.y() + self.selection_size_offset))
             self.last_tile_pos = tile_pos
+            self.setTileIcon(tile_pos, True)
 
     def unselectTile(self, tile_pos):
         logger.debug("tile_pos: %s, last_tile_pos: %s",
@@ -174,9 +180,20 @@ class Tiles(Display):
             pos = self.csel[f"Text{tile_pos}"].instance.position()
             self.csel[f"Text{tile_pos}"].move(
                 ePoint(pos.x(), pos.y() - self.selection_size_offset))
+            self.setTileIcon(tile_pos, False)
         self.last_tile_pos = -1
 
+    def setTileIcon(self, tile_pos, selected):
+        """The icon of the tile: the one with the dark outline and the blue fill on the selected tile, else the white one."""
+        icon_type = self.tile_icon_type.get(tile_pos)
+        if icon_type is None:
+            return
+        icon = (self.selected_icons.get(icon_type) if selected else None) or self.icons.get(icon_type)
+        if icon:
+            self.csel[f"Icon{tile_pos}"].instance.setPixmap(icon)
+
     def hideTile(self, tile_pos):
+        self.tile_icon_type.pop(tile_pos, None)
         for tile_element in ("Frame%d", "Tile%d", "Picture%d", "Icon%d", "Text%d"):
             self.csel[tile_element % tile_pos].hide()
 
@@ -209,13 +226,16 @@ class Tiles(Display):
             self.csel[f"Icon{tile_pos}"].hide()
             self.csel[f"Text{tile_pos}"].hide()
             self.csel[f"Picture{tile_pos}"].show()
+            self.tile_icon_type.pop(tile_pos, None)
         else:
             self.csel[f"Picture{tile_pos}"].hide()
-            icon = self.icons.get(atype) or self.icons.get(MDC_MEDIA_TYPE_UNAVAILABLE)
-            if icon:
-                self.csel[f"Icon{tile_pos}"].instance.setPixmap(icon)
+            icon_type = atype if self.icons.get(atype) else MDC_MEDIA_TYPE_UNAVAILABLE
+            if self.icons.get(icon_type):
+                self.tile_icon_type[tile_pos] = icon_type
+                self.setTileIcon(tile_pos, tile_pos == self.last_tile_pos)
                 self.csel[f"Icon{tile_pos}"].show()
             else:
+                self.tile_icon_type.pop(tile_pos, None)
                 self.csel[f"Icon{tile_pos}"].hide()
             self.csel[f"Text{tile_pos}"].show()
 

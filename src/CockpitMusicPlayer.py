@@ -24,6 +24,7 @@ from .MediaCockpitSummary import MediaCockpitSummary
 from .SkinUtils import getSkinPath
 from .SlideshowPlayers import ServicePlayer
 from .SongQueue import SongQueue, REPEAT_ALL, REPEAT_ONE
+from .MusicStates import createMusicMachine
 from .Version import PLUGIN
 
 EMBEDDED_COVER = "/tmp/.id3coverart"    # written by the gst service when the song has a picture inside
@@ -39,12 +40,16 @@ class CockpitMusicPlayer(Screen, HelpableScreen, Display):
     """Plays the songs of a list one after the other through enigma2's own service (no extra decoder, no extra process).
 
     song_list: the song entries of MediaCockpit (the path is at MDC_IDX_PATH), song_index: the one to start with.
-    Closes with the path of the song that was playing last."""
+    Closes with the path of the song that was playing last.
+
+    What a key does is decided by the table in MusicStates.py: the key methods of this class turn keys and player events into
+    events of that table (self.sm.dispatch) and the do_<action> methods perform its actions."""
 
     def __init__(self, session, song_list, song_index):
         logger.info("song_index: %s, songs: %s", song_index, len(song_list))
         self.song_list = song_list
         self.queue = SongQueue(len(song_list), song_index)
+        self.sm = createMusicMachine(self, self.facts, logger.info)
         Screen.__init__(self, session)
         HelpableScreen.__init__(self)
         self.skinName = "CockpitMusicPlayer"
@@ -95,8 +100,7 @@ class CockpitMusicPlayer(Screen, HelpableScreen, Display):
         self["key_next"] = StaticText(_("NEXT"))
 
         self.player = ServicePlayer(self, self.songEnded)
-        self.paused = False
-        self.tags = None            # what the labels show now, to skip updates that change nothing
+        self.tags = None           # what the labels show now, to skip updates that change nothing
         self.cover_size = None
         self.icon_pixmap = None
         self.cover_busy = False     # ePicLoad decodes one picture at a time
@@ -127,27 +131,72 @@ class CockpitMusicPlayer(Screen, HelpableScreen, Display):
 
     def firstStart(self):
         logger.debug("...")
+        self.sm.dispatch("START")
+
+    def facts(self):
+        """What the table asks for when an event comes in."""
+        return {
+            "has_next": self.queue.peekNext() >= 0,
+            "all_failed": self.player.failures >= len(self.song_list),
+        }
+
+    # keys and player events: all of them are events of the table
+
+    def songEnded(self):
+        """The song ended on its own, or could not be played."""
+        self.sm.dispatch("SONG_ENDED")
+
+    def playNext(self):
+        self.sm.dispatch("NEXT")
+
+    def playPrevious(self):
+        self.sm.dispatch("PREV")
+
+    def playSelected(self):
+        self.sm.dispatch("OK")
+
+    def playpause(self):
+        self.sm.dispatch("PLAY")
+
+    def seekForward(self):
+        self.sm.dispatch("SEEK_FORWARD")
+
+    def seekBackward(self):
+        self.sm.dispatch("SEEK_BACKWARD")
+
+    def toggleShuffle(self):
+        self.sm.dispatch("SHUFFLE")
+
+    def toggleRepeat(self):
+        self.sm.dispatch("REPEAT")
+
+    def moveUp(self):
+        self.sm.dispatch("UP")
+
+    def moveDown(self):
+        self.sm.dispatch("DOWN")
+
+    def exit(self):
+        self.sm.dispatch("EXIT")
+
+    # the actions of the table (MusicStates.py)
+
+    def do_init_widgets(self):
         self.cover_size = self["cover"].instance.size()
         icon_size = self["icon"].instance.size()
         self.icon_pixmap = LoadPixmap(getSkinPath("images/music.svg"), cached=True, width=icon_size.width(), height=icon_size.height())
+
+    def do_fill_list(self):
         self.fillList()
+
+    def do_show_modes(self):
         self.showModes()
-        self.playCurrent()
 
-    # play order and playback
-
-    def currentFile(self):
-        return self.song_list[self.queue.current]
-
-    def currentPath(self):
-        return self.currentFile()[MDC_IDX_PATH] if self.song_list else ""
-
-    def playCurrent(self):
+    def do_play_current(self):
         if self.queue.current < 0:
             return
         path = self.currentPath()
         logger.info("position: %s, path: %s", self.queue.position, path)
-        self.paused = False
         self.player.stop()
         self.tags = None
         self.showFile(path)
@@ -155,53 +204,53 @@ class CockpitMusicPlayer(Screen, HelpableScreen, Display):
         self.showState(_("Playing"))
         self.showPosition()
 
-    def songEnded(self):
-        """The song ended on its own, or could not be played."""
-        if self.player.failures >= len(self.song_list):
-            logger.warning("no song can be played")
-            self.player.stop()
-            self.showState(_("Cannot play"))
-            return
-        song = self.queue.songEnded()
-        if song < 0:
-            self.player.stop()
-            self.showState(_("Stopped"))
-            self.showPosition()
-            return
-        self.playCurrent()
+    def do_stop_player(self):
+        self.player.stop()
 
-    def playNext(self):
+    def do_show_cannot_play(self):
+        logger.warning("no song can be played")
+        self.showState(_("Cannot play"))
+
+    def do_show_stopped(self):
+        self.showState(_("Stopped"))
+
+    def do_show_position(self):
+        self.showPosition()
+
+    def do_queue_next(self):
         self.queue.next()
-        self.playCurrent()
 
-    def playPrevious(self):
+    def do_queue_previous(self):
         self.queue.previous()
-        self.playCurrent()
 
-    def playSelected(self):
+    def do_queue_ended(self):
+        self.queue.songEnded()
+
+    def do_select_song(self):
         position = self["list"].getIndex()
         if position is not None and 0 <= position < len(self.song_list):
             self.queue.position = position
-            self.playCurrent()
 
-    def playpause(self):
-        if not self.player.running():
-            self.playCurrent()      # stopped: start the current song again
-            return
+    def do_pause(self):
+        self.pauseService(True)
+
+    def do_unpause(self):
+        self.pauseService(False)
+
+    def pauseService(self, pause):
         service = self.session.nav.getCurrentService()
         pausable = service.pause() if service else None
         if pausable:
-            if self.paused:
-                pausable.unpause()
-            else:
+            if pause:
                 pausable.pause()
-            self.paused = not self.paused
-            self.showState(_("Paused") if self.paused else _("Playing"))
+            else:
+                pausable.unpause()
+            self.showState(_("Paused") if pause else _("Playing"))
 
-    def seekForward(self):
+    def do_seek_forward(self):
         self.seekRelative(1)
 
-    def seekBackward(self):
+    def do_seek_backward(self):
         self.seekRelative(-1)
 
     def seekRelative(self, direction):
@@ -209,14 +258,32 @@ class CockpitMusicPlayer(Screen, HelpableScreen, Display):
         if seekable and self.player.running():
             seekable.seekRelative(direction, SEEK_SECONDS * PTS_PER_SECOND)
 
-    def toggleShuffle(self):
+    def do_toggle_shuffle(self):
         self.queue.toggleShuffle()
         self.fillList()
         self.showModes()
 
-    def toggleRepeat(self):
+    def do_toggle_repeat(self):
         self.queue.cycleRepeat()
         self.showModes()
+
+    def do_move_up(self):
+        self["list"].selectPrevious()
+
+    def do_move_down(self):
+        self["list"].selectNext()
+
+    def do_close(self):
+        logger.info("position: %s", self.queue.position)
+        self.close(self.currentPath())
+
+    # play order
+
+    def currentFile(self):
+        return self.song_list[self.queue.current]
+
+    def currentPath(self):
+        return self.currentFile()[MDC_IDX_PATH] if self.song_list else ""
 
     # What the COCCurrentService source ("Service" of the skin) and the COCServicePosition converters ask their player for: the
     # screen is that player. Without getLength() the skin cannot be loaded (the progress bar fails, and every widget after it
@@ -249,18 +316,6 @@ class CockpitMusicPlayer(Screen, HelpableScreen, Display):
 
     def getEvent(self):
         return None
-
-    def exit(self):
-        logger.info("position: %s", self.queue.position)
-        path = self.currentPath()
-        self.player.stop()
-        self.close(path)
-
-    def moveUp(self):
-        self["list"].selectPrevious()
-
-    def moveDown(self):
-        self["list"].selectNext()
 
     # what the screen shows
 
