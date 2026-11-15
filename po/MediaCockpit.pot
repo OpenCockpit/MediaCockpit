@@ -536,6 +536,15 @@ msgstr ""
 msgid "Move frame down"
 msgstr ""
 
+msgid "A bookmark cannot be deleted."
+msgstr ""
+
+msgid "Do you really want to delete the folder and everything in it?"
+msgstr ""
+
+msgid "The folder could not be deleted."
+msgstr ""
+
 msgid "Log level"
 msgstr ""
 

@@ -2,6 +2,7 @@
 # License: GNU General Public License v3.0
 
 
+import io
 import os
 from PIL import Image
 from PIL import ImageFile
@@ -121,27 +122,37 @@ def _savePicture(img, out_path, img_format=None):
         raise
 
 
-def createThumbnail(path, size, create=False):
+THUMBNAIL_QUALITY = 90
+
+
+def makeThumbnail(path, size):
+    """The thumbnail of a picture as the bytes of a small JPEG (a PNG when the picture has transparency), None when it cannot be made.
+    It is the picture turned upright, no bigger than size in the longer side. A rotated copy (name.transformed.jpg) is used when
+    there is one. A JPEG is decoded at a fraction of its size, which is several times faster than decoding all of it."""
     logger.debug("path: %s, size: %s", path, str(size))
+    side = max(size.width(), size.height())
+    if side <= 0:
+        logger.error("path: %s, no thumbnail size known yet: %s", path, str(size))
+        return None
     filename, ext = os.path.splitext(path)
-    thumbnail_path = filename + ".thumbnail" + ext
-    if not os.path.exists(thumbnail_path) or create:
-        logger.info("creating %s", thumbnail_path)
-        input_path = filename + ".transformed" + ext
-        if not os.path.exists(input_path):
-            input_path = path
-        side = max(size.width(), size.height())
-        if side <= 0:
-            logger.error("path: %s, no thumbnail size known yet: %s", path, str(size))
-            return
-        try:
-            with Image.open(input_path) as img:
-                img_format = img.format
-                img.thumbnail((side, side))
-                if input_path == path:
-                    # the thumbnail does not keep the EXIF orientation of the original: apply it to the pixels
-                    # (after shrinking, which is much cheaper; the box is square, so the rotation does not matter for it)
-                    img = ImageOps.exif_transpose(img)
-                _savePicture(img, thumbnail_path, img_format)
-        except Exception as e:
-            logger.error("path: %s, exception: %s", path, e)
+    input_path = filename + ".transformed" + ext
+    if not os.path.exists(input_path):
+        input_path = path
+    try:
+        with Image.open(input_path) as img:
+            if img.format == "JPEG":
+                img.draft("RGB", (side, side))
+            img.thumbnail((side, side))
+            if input_path == path:
+                # the thumbnail does not keep the EXIF orientation of the original: apply it to the pixels
+                # (after shrinking, which is much cheaper; the box is square, so the rotation does not matter for it)
+                img = ImageOps.exif_transpose(img)
+            out = io.BytesIO()
+            if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+                img.convert("RGBA").save(out, format="PNG")
+            else:
+                img.convert("RGB").save(out, format="JPEG", quality=THUMBNAIL_QUALITY)
+            return out.getvalue()
+    except Exception as e:  # pylint: disable=broad-except
+        logger.error("path: %s, exception: %s", path, e)
+        return None

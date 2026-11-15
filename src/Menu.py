@@ -21,7 +21,7 @@ class Menu():
             (f"{_('Load cache directory')}", "load_cache_dir"),
             (f"{_('Load cache bookmark')}", "load_cache_bookmark"),
             (f"{_('Show load progress')}", "show_load_progress"),
-            (f"{_('Delete file')}", "delete_file"),
+            (f"{_('Delete')}", "delete_file"),
             (f"{_('Setup')}", "open_setup"),
             (f"{_('About')}", "about")
         ]

@@ -66,3 +66,18 @@ def parentTarget(current_dir, bookmarks):
     if parent == folder:        # the root of the file system is not a bookmark: the list of the bookmarks is the only way up
         return "", ""
     return parent, folder
+
+
+def forgetDeleted(file_list, closed_path, deleted, path_index):
+    """The tile list after pictures were deleted in the viewer: (the list without them, the path that gets the cursor). The cursor stays
+    where it was: on the entry the viewer was left on, or, when that one was deleted too, on the entry that took its place (the last
+    one when it was the last). path_index: where the path is in an entry."""
+    gone = set(deleted)
+    if not gone:
+        return file_list, closed_path
+    old_index = next((i for i, afile in enumerate(file_list) if afile[path_index] == closed_path), 0)
+    before = sum(1 for afile in file_list[:old_index] if afile[path_index] in gone)
+    remaining = [afile for afile in file_list if afile[path_index] not in gone]
+    if closed_path in gone:
+        closed_path = remaining[min(max(old_index - before, 0), len(remaining) - 1)][path_index] if remaining else ""
+    return remaining, closed_path

@@ -37,7 +37,6 @@ from .FileUtils import deleteFile
 from .Slideshow import Slideshow
 from .PictureEditorStates import createPictureEditorMachine
 from .FileListUtils import findMediaIndex, getPath
-from .Thumbnail import Thumbnail
 from .Display import Display
 from .Toast import Toast
 from .Version import ID, PLUGIN
@@ -46,7 +45,7 @@ PICTURE_BACKGROUND = "md_surface_container_lowest"   # colour role of the skin: 
 INFO_TOAST_TIMEOUT = 5      # seconds the picture number and name stay on the screen
 
 
-class PictureEditor(Screen, Thumbnail, Display, HelpableScreen):
+class PictureEditor(Screen, Display, HelpableScreen):
     """The picture screen: the viewer, the picture editor (delete, turn, rotate, crop) and the place where a slideshow is shown. The
     slideshow itself, the timer, the videos and the music, is the engine in Slideshow.py with its own table; it tells this screen what to
     show. What a key does here is decided by the table in PictureEditorStates.py: this class turns keys and the messages of the
@@ -65,7 +64,6 @@ class PictureEditor(Screen, Thumbnail, Display, HelpableScreen):
         self["body"] = Label()      # the place of the picture while the buttons are shown (its rectangle is set by the skin)
         self.toast = Toast(self)    # a short message inside the screen (the label "toast" of the skin)
 
-        Thumbnail.__init__(self)
         Display.__init__(self, self)
         Screen.__init__(self, session)
         HelpableScreen.__init__(self)
@@ -95,6 +93,7 @@ class PictureEditor(Screen, Thumbnail, Display, HelpableScreen):
 
         self["picture_background"] = Label()
         self["picture"] = Pixmap()
+        self.deleted = []       # the paths of the pictures deleted here: the tile screen drops them from its list
 
         # PicAniCockpit plays the transitions. It is only used when its native module loaded and passed its self-test
         # (available()); otherwise the pictures are simply cut in. The skin has an "image" widget in any case.
@@ -270,7 +269,7 @@ class PictureEditor(Screen, Thumbnail, Display, HelpableScreen):
     def do_close_empty(self):
         # nothing to show (empty list or no picture/movie in it): without this the slideshow would skip forever
         self.toast.hide()
-        self.close(getPath(self.file_list, self.file_index))
+        self.close(getPath(self.file_list, self.file_index), self.deleted)
 
     def do_show_screen(self):
         self.show()
@@ -405,7 +404,7 @@ class PictureEditor(Screen, Thumbnail, Display, HelpableScreen):
         # applies EXIF) turns the picture the other way than this screen does
         rc = rotatePicture(in_file, out_file, -90)
         if rc:
-            self.createThumbnail(path, True)
+            FileManager.getInstance(ID).createThumbnail(path, True)
 
             # From the picture itself: the meta of the list entry is a JSON string (not a dict), and it is the one of the time the
             # list was read, so it is out of date after the first rotation of the same picture.
@@ -459,8 +458,9 @@ class PictureEditor(Screen, Thumbnail, Display, HelpableScreen):
         afile = self.file
         path = afile[MDC_IDX_PATH]
         logger.info("edited: %s", path)
-        self.createThumbnail(path, True)
-        FileManager.getInstance(ID).loadDatabaseFile(path)
+        cache = FileManager.getInstance(ID)
+        cache.createThumbnail(path, True)       # the thumbnail in the database is made again from the new picture
+        cache.loadDatabaseFile(path)
         self.redisplay(afile)
 
     def do_delete_picture(self):
@@ -477,6 +477,7 @@ class PictureEditor(Screen, Thumbnail, Display, HelpableScreen):
             self.toast.show(_("The picture could not be deleted"))
             return
         logger.info("deleted: %s", path)
+        self.deleted.append(path)
         FileManager.getInstance(ID).execCacheOp(FILE_OP_DELETE, path, None)
         if self.slideshow.removeCurrent():
             self.slideshow.showSlide()
@@ -499,4 +500,4 @@ class PictureEditor(Screen, Thumbnail, Display, HelpableScreen):
     def do_close(self):
         path = self.file[MDC_IDX_PATH]
         logger.debug("file_index: %s, path: %s", self.file_index, path)
-        self.close(path)
+        self.close(path, self.deleted)

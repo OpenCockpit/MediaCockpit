@@ -86,8 +86,7 @@ def findMediaIndex(file_list, start=0):
 def splitMediaSongList(file_list):
     song_list = []
     media_list = []
-    for afile in file_list:
-        logger.debug("afile: %s", afile)
+    for afile in file_list:     # no debug line per entry: for a folder of a thousand files it cost seconds
         if afile[MDC_IDX_MEDIA] in MDC_MEDIA_TYPE_FILE:
             if afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MUSIC:
                 song_list.append(afile)

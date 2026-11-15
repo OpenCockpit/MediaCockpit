@@ -3,7 +3,6 @@
 
 
 import os
-import shutil
 from datetime import datetime
 from enigma import eConsoleAppContainer
 from Screens.Screen import Screen
@@ -13,7 +12,9 @@ from Components.Button import Button
 from Components.Sources.List import List
 from Components.ActionMap import HelpableActionMap
 from Tools.LoadPixmap import LoadPixmap
-from .PixmapUtils import loadPixmap
+from Plugins.SystemPlugins.CacheCockpit.FileManager import FileManager
+from .PixmapUtils import loadPixmapFromBytes
+from .Version import ID
 from .__init__ import _
 from .Debug import logger
 from .FileManagerUtils import MDC_IDX_PATH, MDC_IDX_MEDIA, MDC_IDX_DATE
@@ -116,8 +117,7 @@ class MediaInfo(Screen, HelpableScreen, Display):
     def grabThumbnail(self):
         if self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MOVIE and not self.container.running():
             self["key_blue"].hide()
-            filename = os.path.splitext(self.file[MDC_IDX_PATH])[0]
-            self.thumbnail = filename + ".thumbnail.jpg"
+            self.thumbnail = self.file[MDC_IDX_PATH]      # the movie whose thumbnail is being grabbed
             # enigma2 splits the command line itself and cannot escape a quote inside quotes, so a file name with an apostrophe
             # (or a space, if it were not quoted) cannot be passed. ffmpeg reads and writes names of our own instead.
             self.removeGrabFiles()
@@ -131,27 +131,25 @@ class MediaInfo(Screen, HelpableScreen, Display):
             self.container.execute(cmd)
 
     def grabThumbnailCallback(self, retval):
-        thumbnail = self.thumbnail
+        movie = self.thumbnail
         stored = False
         if retval == 0 and os.path.exists(GRAB_TMP) and os.path.getsize(GRAB_TMP) > 0:
-            # copy next to the movie under a temporary name and rename, so a half copied file is never taken as a thumbnail
-            tmp = thumbnail + ".tmp"
+            # the picture ffmpeg wrote goes into the database of the cache, as the thumbnail of the movie
             try:
-                shutil.copyfile(GRAB_TMP, tmp)
-                os.replace(tmp, thumbnail)
+                with open(GRAB_TMP, "rb") as grabbed:
+                    FileManager.getInstance(ID).setThumbnail(movie, grabbed.read())
                 stored = True
             except OSError as e:
-                logger.error("cannot store %s: %s", thumbnail, e)
-                deleteFile(tmp)
+                logger.error("cannot store the thumbnail of %s: %s", movie, e)
         else:
             logger.info("no thumbnail grabbed, retval: %s", retval)
         self.removeGrabFiles()
         # the user may have moved on to another entry while ffmpeg was running
-        is_current = self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MOVIE and thumbnail == os.path.splitext(self.file[MDC_IDX_PATH])[0] + ".thumbnail.jpg"
+        is_current = self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MOVIE and movie == self.file[MDC_IDX_PATH]
         if is_current:
             self["key_blue"].show()
             if stored:
-                self.showThumbnail(thumbnail)
+                self.showThumbnail(movie)
 
     def fillList(self):
         self.file = self.file_list[self.file_index]
@@ -178,8 +176,7 @@ class MediaInfo(Screen, HelpableScreen, Display):
             self["key_blue"].hide()
             exif_data = getExifData(self.file[MDC_IDX_PATH])
             logger.debug("exif_data: %s", str(exif_data))
-            thumbnail = filename + ".thumbnail" + ext
-            self.showThumbnail(thumbnail)
+            self.showThumbnail(self.file[MDC_IDX_PATH])
             MeteringModeDesc = (_("unknown"), "Average", "Center-weighted Average",
                                 "Spot", "Multi-spot", "Multi-segment", "Partial", "Other")
             OrientDesc = ("Top-Left(0)", "Top-Left(1)", "Top-Right", "Bottom-Right",
@@ -218,14 +215,16 @@ class MediaInfo(Screen, HelpableScreen, Display):
                 alist.append((_("Exif Version"), exif_data["ExifVersion"], None))
         elif self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MOVIE:
             self["key_blue"].show()
-            thumbnail = filename + ".thumbnail.jpg"
-            self.showThumbnail(thumbnail)
+            self.showThumbnail(self.file[MDC_IDX_PATH])
         self["list"].setList(alist)
         self["list"].master.downstream_elements.setSelectionEnabled(0)
 
     def showThumbnail(self, path):
-        if os.path.exists(path):
-            ptr = loadPixmap(path)
+        """The thumbnail of the picture or movie at path, from the database of the cache."""
+        cache = FileManager.getInstance(ID)
+        data = cache.getThumbnail(path) or cache.importLegacyThumbnail(path)
+        if data:
+            ptr = loadPixmapFromBytes(data)
             if ptr:
                 self["thumbnail"].instance.setPixmap(ptr)
                 self["thumbnail"].show()

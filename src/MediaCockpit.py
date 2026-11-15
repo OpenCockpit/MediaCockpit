@@ -19,16 +19,17 @@ from Plugins.SystemPlugins.CacheCockpit.FileManager import FileManager
 from .__init__ import _
 from .Version import ID, PLUGIN
 from .Debug import logger
-from .FileManagerUtils import FILE_OP_LOAD
+from .FileManagerUtils import FILE_OP_LOAD, FILE_OP_DELETE
 from .FileManagerUtils import MDC_IDX_MEDIA, MDC_IDX_PATH, MDC_IDX_TYPE, MDC_IDX_BOOKMARK
-from .FileManagerUtils import MDC_TYPE_FILE, MDC_MEDIA_TYPE_FILE, MDC_MEDIA_TYPE_UP, MDC_MEDIA_TYPE_DIR, MDC_MEDIA_TYPE_PLAYLIST, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE, MDC_MEDIA_TYPE_MUSIC, MDC_MEDIA_TYPE_UNAVAILABLE
+from .FileManagerUtils import MDC_TYPE_FILE, MDC_TYPE_DIR, MDC_MEDIA_TYPE_FILE, MDC_MEDIA_TYPE_UP, MDC_MEDIA_TYPE_DIR, MDC_MEDIA_TYPE_PLAYLIST, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE, MDC_MEDIA_TYPE_MUSIC, MDC_MEDIA_TYPE_UNAVAILABLE
 from .FileListUtils import getFile, getDir, getPath, getIndex, nextIndex, findMediaIndex, splitMediaSongList, scanPlaylistFiles
 from .FileUtils import deleteFile, deleteFiles
+from .TileDelete import deleteKind, deleteFolder, FOLDER, PROTECTED
 from .MediaInfo import MediaInfo
 from .Tiles import Tiles
 from .PictureEditor import PictureEditor
 from .ListStates import createListMachine, SLIDESHOW, PICTURE, MOVIE, MUSIC, DIR, UP, PLAYLIST, UNAVAILABLE, NONE
-from .ReturnTarget import ReturnTarget, parentTarget
+from .ReturnTarget import ReturnTarget, parentTarget, forgetDeleted
 from .Toast import Toast
 from .CockpitPlayer import CockpitPlayer
 from .CockpitMusicPlayer import CockpitMusicPlayer
@@ -289,12 +290,12 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
             self.changeDir(*target)
 
     def keyExit(self):
-        """EXIT goes up one folder. Only the red key leaves MediaCockpit, so that EXIT, which one presses without thinking to get
-        out of a folder, cannot leave it by accident. In the list of favorites there is no folder above: say how to leave."""
+        """EXIT goes up one folder; in the list of favorites, where there is no folder above, it leaves MediaCockpit (the red key and POWER
+        leave from anywhere)."""
         if self.playlist_path or parentTarget(self.current_dir, self.bookmarks):
             self.goUp()
         else:
-            self.toast.show(_("Press the red key to leave MediaCockpit."))
+            self.exit()
 
     def changeDir(self, target_dir, target_path=""):
         logger.debug("target_dir: %s, target_path: %s",
@@ -327,8 +328,9 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
     def processOk(self):
         self.sm.dispatch("OK")
 
-    def PictureEditorCallback(self, path):
-        self.closed_path = path
+    def PictureEditorCallback(self, path, deleted=()):
+        # pictures deleted in the viewer are gone from the tile list, and the cursor stays where it was
+        self.file_list, self.closed_path = forgetDeleted(self.file_list, path, deleted, MDC_IDX_PATH)
         self.sm.dispatch("SLIDESHOW_CLOSED")
 
     def MusicPlayerCallback(self, path=""):
@@ -405,6 +407,9 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         self.session.openWithCallback(self.CockpitPlayerCallback, CockpitPlayer, service, config.plugins.mediacockpit, True, 0, None, self.service_center)
 
     def do_restore_after_slideshow(self):
+        # The list is read again when the screen is shown (loadList): the cursor goes to the picture the viewer was left on, not to the one
+        # it was started on (that one may be deleted, then the list would start at its first tile).
+        self.target.cursor_on(self.closed_path, bool(self.playlist_path))
         # the video buffer is cleared by onDialogShow() (self.show() in setTilesCursor), once, and only if a video was played
         self.clear_video_buffer = self.video_played
         self.video_played = False
@@ -439,10 +444,24 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         self.close()
 
     def deleteFile(self):
+        """MENU > Delete: the file or the folder (with everything in it) under the cursor, after a question."""
         afile = getFile(self.file_list, self.file_index)
-        if afile and afile[MDC_IDX_TYPE] == MDC_TYPE_FILE and afile[MDC_IDX_MEDIA] != MDC_MEDIA_TYPE_UNAVAILABLE:
-            self.session.openWithCallback(self.deleteFileCallback, MessageBox, _(
-                "Do you really want to delete the file?"))
+        if not afile:
+            return
+        is_folder = afile[MDC_IDX_TYPE] == MDC_TYPE_DIR
+        kind = deleteKind(is_folder, afile[MDC_IDX_MEDIA] in (MDC_MEDIA_TYPE_UP, MDC_MEDIA_TYPE_UNAVAILABLE), afile[MDC_IDX_PATH], self.bookmarks)
+        if kind is None:
+            return
+        if kind == PROTECTED:
+            self.toast.show(_("A bookmark cannot be deleted."))
+            return
+        name = os.path.basename(os.path.normpath(afile[MDC_IDX_PATH]))
+        if kind == FOLDER:
+            question = _("Do you really want to delete the folder and everything in it?")
+        else:
+            question = _("Do you really want to delete the file?")
+        self.session.openWithCallback(self.deleteFileCallback, MessageBox, question + "\n\n" + name,
+                                      default=kind != FOLDER)     # a folder: the answer that is not given by pressing OK twice
 
     def deleteFileCallback(self, answer=None):
         if answer:
@@ -450,7 +469,12 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
             path = afile[MDC_IDX_PATH]
             filename, ext = os.path.splitext(path)
             logger.debug("filename: %s", filename)
-            if afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PICTURE:
+            if afile[MDC_IDX_TYPE] == MDC_TYPE_DIR:
+                # renamed to name.del: it stays on the disk, and the cache does not load it (CacheLoadMDC.checkDir)
+                if not deleteFolder(path):
+                    self.toast.show(_("The folder could not be deleted."))
+                    return
+            elif afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PICTURE:
                 # only the picture and its own derived files: IMG_1.* would also take IMG_1.CR2 or IMG_1.mp4 with it
                 for sidecar in (path, filename + ".thumbnail" + ext, filename + ".thumbnail.jpg", filename + ".transformed" + ext):
                     deleteFile(sidecar)
@@ -459,7 +483,7 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
                 deleteFiles(glob.escape(filename) + ".*")
             del self.file_list[self.file_index]
             self.media_list, self.song_list = splitMediaSongList(self.file_list)  # the slideshow must not see the deleted file
-            FileManager.getInstance(ID).delete(path)
+            FileManager.getInstance(ID).execCacheOp(FILE_OP_DELETE, path, None)   # the entry, and everything below it for a folder
             if not self.file_index < len(self.file_list):
                 self.file_index -= 1
             self.target.path = getPath(self.file_list, self.file_index)

@@ -532,6 +532,15 @@ msgstr "Rahmen nach oben"
 msgid "Move frame down"
 msgstr "Rahmen nach unten"
 
+msgid "A bookmark cannot be deleted."
+msgstr "Ein Lesezeichen kann nicht gelöscht werden."
+
+msgid "Do you really want to delete the folder and everything in it?"
+msgstr "Soll der Ordner mit allem, was darin ist, wirklich gelöscht werden?"
+
+msgid "The folder could not be deleted."
+msgstr "Der Ordner konnte nicht gelöscht werden."
+
 msgid "Log level"
 msgstr "Debug Log-Stufe"
 

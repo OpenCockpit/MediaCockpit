@@ -40,3 +40,22 @@ def loadPixmap(path, cached=False):
     except Exception as e:  # noqa: BLE001
         logger.error("path: %s, e: %s", path, e)
         return None
+
+
+# the thumbnail that is being loaded: written to RAM for a moment, one file for all. Not one literal: gitupdatepics takes a literal ending in
+# .png or .jpg for a picture of the skin.
+THUMBNAIL_JPG = "/tmp/.mediacockpit_thumbnail" + ".jpg"
+THUMBNAIL_PNG = "/tmp/.mediacockpit_thumbnail" + ".png"
+
+
+def loadPixmapFromBytes(data):
+    """A picture that is held as bytes (a thumbnail from the database): LoadPixmap needs a file, so it is written to RAM and loaded from
+    there. Returns None if it cannot be loaded."""
+    path = THUMBNAIL_JPG if data[:2] == b"\xff\xd8" else THUMBNAIL_PNG
+    try:
+        with open(path, "wb") as thumbnail_file:
+            thumbnail_file.write(data)
+        return loadPixmap(path)
+    except OSError as e:
+        logger.error("cannot write %s: %s", path, e)
+        return None

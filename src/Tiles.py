@@ -13,13 +13,13 @@ from Tools.LoadPixmap import LoadPixmap
 from Plugins.SystemPlugins.MountCockpit.MountCockpit import MountCockpit
 from skin import parseColor
 from .SkinUtils import getSkinPath
-from .PixmapUtils import loadPixmap
+from .PixmapUtils import loadPixmapFromBytes
 from .Debug import logger
 from .__init__ import _
 from .FileManagerUtils import MDC_IDX_MEDIA, MDC_IDX_PATH
 from .FileManagerUtils import MDC_MEDIA_TYPE_FILE, MDC_MEDIA_TYPE_UP, MDC_MEDIA_TYPE_DIR, MDC_MEDIA_TYPE_PLAYLIST, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE, MDC_MEDIA_TYPE_MUSIC, MDC_MEDIA_TYPE_UNAVAILABLE
 from .FileListUtils import getDir
-from .PictureUtils import createThumbnail
+from Plugins.SystemPlugins.CacheCockpit.FileManager import FileManager
 from .Display import Display
 from .Version import ID
 
@@ -213,14 +213,12 @@ class Tiles(Display):
             self.csel[f"Text{tile_pos}"].setText("..")
         else:
             self.csel[f"Text{tile_pos}"].setText(os.path.basename(path))
-        thumbnail_path = None
+        thumbnail = None
         if atype in {MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE}:
-            filename, ext = os.path.splitext(path)
-            for thumbnail in (filename + ".thumbnail" + ext, filename + ".thumbnail.jpg"):
-                if os.path.exists(thumbnail):
-                    thumbnail_path = thumbnail
-                    break
-        thumbnail = loadPixmap(thumbnail_path) if thumbnail_path else None
+            # kept in the database of the cache; a thumbnail file of an older version is taken over there on first use
+            cache = FileManager.getInstance(ID)
+            data = cache.getThumbnail(path) or cache.importLegacyThumbnail(path)
+            thumbnail = loadPixmapFromBytes(data) if data else None
         if thumbnail:
             self.csel[f"Picture{tile_pos}"].instance.setPixmap(thumbnail)
             self.csel[f"Icon{tile_pos}"].hide()
@@ -282,11 +280,6 @@ class Tiles(Display):
 
 # missing thumbnails
 
-    @staticmethod
-    def thumbnailPath(path):
-        filename, ext = os.path.splitext(path)
-        return filename + ".thumbnail" + ext
-
     def queueThumbnails(self, first_idx, last_idx):
         """The scan (CacheCockpit) creates thumbnails, but pictures that were scanned before the size was known, or that came with
         a copy of the database, have none. They are made here for the tiles on the screen, one per timer tick so that the remote
@@ -295,10 +288,11 @@ class Tiles(Display):
         self.thumbnail_todo = []
         if not config.plugins.mediacockpit.create_thumbnails.value or self.thumbnail_size.width() <= 0:
             return
-        for idx in range(first_idx, last_idx):
-            afile = self.file_list[idx]
-            path = afile[MDC_IDX_PATH]
-            if afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PICTURE and path not in self.thumbnail_failed and not os.path.exists(self.thumbnailPath(path)):
+        pictures = [idx for idx in range(first_idx, last_idx) if self.file_list[idx][MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PICTURE]
+        have = FileManager.getInstance(ID).thumbnailPaths([self.file_list[idx][MDC_IDX_PATH] for idx in pictures])
+        for idx in pictures:
+            path = self.file_list[idx][MDC_IDX_PATH]
+            if path not in self.thumbnail_failed and path not in have:
                 self.thumbnail_todo.append(idx)
         if self.thumbnail_todo:
             self.thumbnail_timer.start(100, True)
@@ -310,8 +304,9 @@ class Tiles(Display):
         try:
             if idx < len(self.file_list):
                 path = self.file_list[idx][MDC_IDX_PATH]
-                createThumbnail(path, self.thumbnail_size)
-                if os.path.exists(self.thumbnailPath(path)):
+                cache = FileManager.getInstance(ID)
+                cache.createThumbnail(path)
+                if cache.hasThumbnail(path):
                     if idx // self.tiles == self.file_index // self.tiles:  # still on the screen
                         self.paintTile(idx, idx % self.tiles)
                 else:

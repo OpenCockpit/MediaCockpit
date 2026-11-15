@@ -532,6 +532,15 @@ msgstr "attivo"
 msgid "off"
 msgstr "disattivo"
 
+msgid "A bookmark cannot be deleted."
+msgstr "Un segnalibro non può essere eliminato."
+
+msgid "Do you really want to delete the folder and everything in it?"
+msgstr "Vuoi davvero eliminare la cartella e tutto il suo contenuto?"
+
+msgid "The folder could not be deleted."
+msgstr "Impossibile eliminare la cartella."
+
 msgid "Infobar/Play"
 msgstr ""
 
