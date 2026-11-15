@@ -409,6 +409,9 @@ msgstr "%d Einträge der Playlist sind noch nicht im Cache. Öffne die Playlist 
 msgid "The file is not available."
 msgstr "Die Datei ist nicht verfügbar."
 
+msgid "There is no picture or video in the folder."
+msgstr "Im Ordner gibt es kein Bild und kein Video."
+
 msgid "Unavailable"
 msgstr "Nicht verfügbar"
 

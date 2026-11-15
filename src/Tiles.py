@@ -247,6 +247,7 @@ class Tiles(Display):
         logger.debug("mounted_bookmarks: %s", mounted_bookmarks)
         self.is_mounted = bookmark in mounted_bookmarks
         file_list_len = len(self.file_list)
+        self.file_index = max(self.file_index, 0)     # an empty list or a deleted last entry must never leave a negative index
         first_idx = self.file_index // self.tiles * self.tiles
         last_idx = first_idx + self.tiles
 

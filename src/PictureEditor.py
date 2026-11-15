@@ -52,8 +52,9 @@ class PictureEditor(Screen, Display, HelpableScreen):
     slideshow into events of that table (self.sm.dispatch) and performs its actions (the do_<action> methods)."""
 
     def __init__(self, session, csel, file_list, file_index, start_slideshow=False, song_list=None):
-        logger.info("file_index: %s, start_slideshow: %s, file_list: %s, song_list: %s",
-                    file_index, start_slideshow, file_list, song_list)
+        # only the numbers: the entries carry the EXIF data, a list of 18000 pictures made a log line of 20 MB that blocked the screen for 26 seconds
+        logger.info("file_index: %s, start_slideshow: %s, pictures and videos: %s, songs: %s",
+                    file_index, start_slideshow, len(file_list), len(song_list or ()))
         self.csel = csel
         self.sm = createPictureEditorMachine(self, self.facts, logger.info)
         self.info_line = ""     # number and name of the picture, what the header shows

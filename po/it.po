@@ -403,6 +403,9 @@ msgstr "%d voci della playlist non sono ancora nella cache. Aprire di nuovo la p
 msgid "The file is not available."
 msgstr "Il file non è disponibile."
 
+msgid "There is no picture or video in the folder."
+msgstr "Nella cartella non ci sono immagini né video."
+
 msgid "Unavailable"
 msgstr "Non disponibile"
 

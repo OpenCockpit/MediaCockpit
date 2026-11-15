@@ -29,7 +29,7 @@ from .MediaInfo import MediaInfo
 from .Tiles import Tiles
 from .PictureEditor import PictureEditor
 from .ListStates import createListMachine, SLIDESHOW, PICTURE, MOVIE, MUSIC, DIR, UP, PLAYLIST, UNAVAILABLE, NONE
-from .ReturnTarget import ReturnTarget, parentTarget, forgetDeleted
+from .ReturnTarget import ReturnTarget, parentTarget, forgetDeleted, treeOrder
 from .Toast import Toast
 from .CockpitPlayer import CockpitPlayer
 from .CockpitMusicPlayer import CockpitMusicPlayer
@@ -65,6 +65,8 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         self.media_list = []
         self.media_index = -1
         self.song_list = []
+        self.tree_root = ""         # the folder whose slideshow is open (PLAY on a folder tile), "" otherwise
+        self.tree_media, self.tree_songs = [], []     # its pictures and videos, and songs, with those of the folders below it
         self.playlist_path = ""     # the .m3u whose entries are listed, "" when a folder is shown
         self.first_start = True
         # The live service is restarted and stopped again to clear the video plane ("clear video buffer"). Every play of the
@@ -175,7 +177,8 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         FileManager.getInstance(ID).onDatabaseChanged()
         logger.debug("file_index: %s", self.file_index)
         # the entries of a playlist live in any folder: the target is the playlist then, not the folder of the entry
-        self.target.remember(self.playlist_path, getDir(self.file_list, self.file_index), getPath(self.file_list, self.file_index))
+        # the folder that is shown, not getDir(): for a folder tile that is the folder itself, and the reload after a dialog would enter it
+        self.target.remember(self.playlist_path, self.current_dir or "", getPath(self.file_list, self.file_index))
         logger.info("target: %s", self.target)
 
     def onSelectionChange(self):
@@ -320,6 +323,7 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
             "next_media": MEDIA_NAMES.get(self.file_list[(self.file_index + 1) % len(self.file_list)][MDC_IDX_MEDIA], NONE) if afile else NONE,
             "has_media": findMediaIndex(self.file_list, self.file_index) >= 0 and bool(self.media_list),
             "has_songs": bool(self.song_list),
+            "tree_has_media": bool(self.tree_media),
         }
 
     def playpause(self):
@@ -329,6 +333,10 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         self.sm.dispatch("OK")
 
     def PictureEditorCallback(self, path, deleted=()):
+        if self.tree_root:
+            # the slideshow of a folder ends in some folder below it: the cursor goes back to the folder tile that was played
+            path = self.tree_root
+            self.tree_root, self.tree_media, self.tree_songs = "", [], []
         # pictures deleted in the viewer are gone from the tile list, and the cursor stays where it was
         self.file_list, self.closed_path = forgetDeleted(self.file_list, path, deleted, MDC_IDX_PATH)
         self.sm.dispatch("SLIDESHOW_CLOSED")
@@ -349,9 +357,6 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
 
     def do_change_dir(self):
         self.changeDir(self.selectedPath())
-
-    def do_read_dir(self):
-        self.readFileList(self.selectedPath())
 
     def do_go_up(self):
         self.goUp()
@@ -386,6 +391,24 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         self.hide()
         self.session.openWithCallback(self.PictureEditorCallback, PictureEditor, self,
                                       self.media_list, self.media_index, self.slideshow, self.song_list)
+
+    def do_read_tree(self):
+        """PLAY on a folder: its pictures and videos, and those of all folders below it, from the cache, in the order of the tiles (subfolders first, each with what is in it, then the files)."""
+        root = self.selectedPath()
+        file_manager = FileManager.getInstance(ID)
+        dirs = file_manager.getDirList(root) + file_manager.getDirList(root, True)   # recursive does not have the direct subfolders: they are in root itself
+        files = file_manager.getFileList(root) + file_manager.getFileList(root, True)   # the folder itself, and (recursive) the ones below it
+        self.tree_root = root
+        self.tree_media, self.tree_songs = splitMediaSongList(treeOrder(root, dirs, files, MDC_IDX_PATH, sortList))
+        logger.info("root: %s, pictures and videos: %s, songs: %s", root, len(self.tree_media), len(self.tree_songs))
+
+    def do_toast_empty_tree(self):
+        self.tree_root = ""
+        self.toast.show(_("There is no picture or video in the folder."))
+
+    def do_open_tree_show(self):
+        self.hide()
+        self.session.openWithCallback(self.PictureEditorCallback, PictureEditor, self, self.tree_media, 0, True, self.tree_songs)
 
     def do_open_viewer(self):
         """A single picture: the slideshow screen without a running slideshow."""
@@ -460,12 +483,18 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
             question = _("Do you really want to delete the folder and everything in it?")
         else:
             question = _("Do you really want to delete the file?")
-        self.session.openWithCallback(self.deleteFileCallback, MessageBox, question + "\n\n" + name,
+        asked = afile[MDC_IDX_PATH]
+        self.session.openWithCallback(lambda answer=None: self.deleteFileCallback(answer, asked), MessageBox, question + "\n\n" + name,
                                       default=kind != FOLDER)     # a folder: the answer that is not given by pressing OK twice
 
-    def deleteFileCallback(self, answer=None):
+    def deleteFileCallback(self, answer=None, asked=None):
+        """asked: the path the question was about. The list can have been reloaded while the question was open, so the entry under the
+        cursor now may be another one: only the asked one is deleted, and nothing if it is not there any more."""
         if answer:
             afile = getFile(self.file_list, self.file_index)
+            if not afile or afile[MDC_IDX_PATH] != asked:
+                logger.warning("the question was about %s, the cursor is on %s now: nothing is deleted", asked, afile and afile[MDC_IDX_PATH])
+                return
             path = afile[MDC_IDX_PATH]
             filename, ext = os.path.splitext(path)
             logger.debug("filename: %s", filename)
@@ -485,7 +514,7 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
             self.media_list, self.song_list = splitMediaSongList(self.file_list)  # the slideshow must not see the deleted file
             FileManager.getInstance(ID).execCacheOp(FILE_OP_DELETE, path, None)   # the entry, and everything below it for a folder
             if not self.file_index < len(self.file_list):
-                self.file_index -= 1
+                self.file_index = max(len(self.file_list) - 1, 0)
             self.target.path = getPath(self.file_list, self.file_index)
             self.repaintTiles()
 

@@ -21,7 +21,7 @@ events that follow the actions. A key or event that has no row for a state does 
 | PLAY | mode=LIST | media=PICTURE/MOVIE/MUSIC | - | pending=SLIDESHOW | START_SHOW |  |
 | PLAY | mode=LIST | media=UP, next_media=PLAYLIST | next_entry | same | PLAY | a folder of playlists: PLAY on the parent tile plays the first playlist |
 | PLAY | mode=LIST | media=UP/UNAVAILABLE | next_entry | pending=SLIDESHOW | START_SHOW | the slideshow starts at the next picture or video |
-| PLAY | mode=LIST | media=DIR | read_dir | pending=SLIDESHOW | - | the folder is read, then the slideshow starts (LIST_READ) |
+| PLAY | mode=LIST | media=DIR | read_tree | same | START_TREE | a slideshow of the folder and all folders below it; the tiles stay where they are |
 | PLAY | mode=LIST | media=PLAYLIST | open_playlist | pending=SLIDESHOW | - |  |
 | LIST_READ | mode=not LIST | - | paint_tiles | same | - | the screen was shown before the callback of the child screen came: only paint, never start a slideshow again |
 | LIST_READ | pending=SLIDESHOW | - | - | same | START_SHOW |  |
@@ -29,6 +29,8 @@ events that follow the actions. A key or event that has no row for a state does 
 | START_SHOW | any | has_media=True | open_slideshow | mode=SLIDESHOW | - |  |
 | START_SHOW | any | has_media=False, has_songs=True | open_music | pending=NONE, mode=MUSIC | - | only songs: the music player plays them, from the selected one |
 | START_SHOW | any | has_media=False | repaint_tiles | pending=NONE | - | nothing to show |
+| START_TREE | any | tree_has_media=True | open_tree_show | mode=SLIDESHOW | - |  |
+| START_TREE | any | tree_has_media=False | toast_empty_tree | same | - | no picture or video in the folder |
 | SLIDESHOW_CLOSED | any | - | restore_after_slideshow | mode=LIST, pending=NONE | - |  |
 | MUSIC_CLOSED | any | - | restore_after_music | mode=LIST, pending=NONE | - |  |
 | MOVIE_CLOSED | any | - | restore_after_movie | mode=LIST, pending=NONE | - |  |
@@ -49,6 +51,7 @@ Facts
   next_media  the type of the entry after the one under the cursor
   has_media   the list has a picture or a video
   has_songs   the list has a song
+  tree_has_media  the folder that PLAY was pressed on has a picture or a video, in it or below it
 ```
 
 ## Slideshow

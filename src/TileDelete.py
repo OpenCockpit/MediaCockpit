@@ -18,8 +18,8 @@ def deleteKind(is_folder, is_placeholder, path, bookmarks, ismount=os.path.ismou
 
     A folder that is a bookmark is what the list of the bookmarks shows, and removing it would take a whole disk or share with it;
     a mount point is the same. They are compared as normalized paths (a trailing slash does not matter)."""
-    if is_placeholder or not path:
-        return None
+    if is_placeholder or not path or ".." in path.split("/"):
+        return None         # a path with .. is the tile of the parent folder: normpath would turn it into the folder that is shown
     if not is_folder:
         return FILE
     folder = os.path.normpath(path)
@@ -32,6 +32,8 @@ def deleteFolder(path):
     """A folder is not removed but renamed to name.del (name.2.del, name.3.del ... when that exists already): everything stays on the disk
     and renaming it back brings it back, while the cache does not load it (CacheLoadMDC.checkDir). Returns the new path, None if the folder
     could not be renamed (nothing is changed then)."""
+    if not path or ".." in path.split("/"):
+        return None
     folder = os.path.normpath(path)
     target = folder + DELETED_SUFFIX
     number = 1

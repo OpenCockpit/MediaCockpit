@@ -81,3 +81,28 @@ def forgetDeleted(file_list, closed_path, deleted, path_index):
     if closed_path in gone:
         closed_path = remaining[min(max(old_index - before, 0), len(remaining) - 1)][path_index] if remaining else ""
     return remaining, closed_path
+
+
+
+
+def treeOrder(root, dirs, files, path_index, sort):
+    """The entries a slideshow of a folder shows, in the order the tiles show them: the subfolders first (each one with everything in it,
+    the same way), then the files of the folder. Hidden folders (.Thumbnails) and deleted ones (name.del) are left out with everything in
+    them: the cache can still have entries of them. dirs, files: the entries of all folders below root, and the files of root itself
+    (any order); sort: the sort of the tiles, list -> list; path_index: where the path is in an entry."""
+    dirs_in, files_in = {}, {}
+    for entry in dirs:
+        dirs_in.setdefault(os.path.dirname(entry[path_index].rstrip("/")), []).append(entry)
+    for entry in files:
+        files_in.setdefault(os.path.dirname(entry[path_index]), []).append(entry)
+    shown = []
+
+    def walk(folder):
+        for entry in sort(dirs_in.get(folder, [])):
+            path = entry[path_index].rstrip("/")
+            if not os.path.basename(path).startswith(".") and not path.endswith(".del"):
+                walk(path)
+        shown.extend(sort(files_in.get(folder, [])))
+
+    walk(os.path.normpath(root))
+    return shown

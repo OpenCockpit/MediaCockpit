@@ -42,7 +42,7 @@ Show playlist content (media files, directories, etc.)
 - Animation in slideshows
 
 # Picture viewer and editor
-- **OK** on a picture opens the picture viewer; **PLAY** runs a slideshow, **MENU** switches the transition
+- **OK** on a picture opens the picture viewer; **PLAY** runs a slideshow (on a folder: of all pictures and videos in it and in the folders below it), **MENU** switches the transition
 - **RED** deletes the picture after a question: it is renamed to `name.jpg.del` (rename it back to get it back) and leaves the lists and the cache
 - **GREEN** opens the rotate screen: the bouquet keys turn it by 2 degrees clockwise / counterclockwise, **BLUE** cuts away the empty corners, **GREEN** saves, **RED** cancels
 - **YELLOW** turns the picture by 90 degrees (the file keeps its pixels, only the orientation is stored)

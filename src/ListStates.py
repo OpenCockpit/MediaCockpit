@@ -19,6 +19,7 @@
 #   next_media  the type of the entry after the one under the cursor
 #   has_media   the list has a picture or a video
 #   has_songs   the list has a song
+#   tree_has_media  the folder that PLAY was pressed on has a picture or a video, in it or below it
 
 from .StateMachine import StateMachine, rule, Not
 
@@ -49,8 +50,8 @@ RULES = [
          note="a folder of playlists: PLAY on the parent tile plays the first playlist"),
     rule("PLAY", when={"mode": LIST}, facts={"media": (UP, UNAVAILABLE)}, do="next_entry", to={"pending": SLIDESHOW}, then="START_SHOW",
          note="the slideshow starts at the next picture or video"),
-    rule("PLAY", when={"mode": LIST}, facts={"media": DIR}, do="read_dir", to={"pending": SLIDESHOW},
-         note="the folder is read, then the slideshow starts (LIST_READ)"),
+    rule("PLAY", when={"mode": LIST}, facts={"media": DIR}, do="read_tree", then="START_TREE",
+         note="a slideshow of the folder and all folders below it; the tiles stay where they are"),
     rule("PLAY", when={"mode": LIST}, facts={"media": PLAYLIST}, do="open_playlist", to={"pending": SLIDESHOW}),
 
     # A list was read.
@@ -64,6 +65,10 @@ RULES = [
     rule("START_SHOW", facts={"has_media": False, "has_songs": True}, do="open_music", to={"pending": NONE, "mode": MUSIC},
          note="only songs: the music player plays them, from the selected one"),
     rule("START_SHOW", facts={"has_media": False}, do="repaint_tiles", to={"pending": NONE}, note="nothing to show"),
+
+    # PLAY on a folder: the pictures and videos of the folder and of the folders below it (read by read_tree).
+    rule("START_TREE", facts={"tree_has_media": True}, do="open_tree_show", to={"mode": SLIDESHOW}),
+    rule("START_TREE", facts={"tree_has_media": False}, do="toast_empty_tree", note="no picture or video in the folder"),
 
     # A screen that was opened is closed: the tiles come back, with the cursor where the user was.
     rule("SLIDESHOW_CLOSED", do="restore_after_slideshow", to={"mode": LIST, "pending": NONE}),

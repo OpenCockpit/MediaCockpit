@@ -413,6 +413,9 @@ msgstr ""
 msgid "The file is not available."
 msgstr ""
 
+msgid "There is no picture or video in the folder."
+msgstr ""
+
 msgid "Unavailable"
 msgstr ""
 
