@@ -1,0 +1,13 @@
+screen:
+  backgroundColor: "md_transparent"
+  name: "PictureRotate"
+  position: "fill"
+  resolution: "1920,1080"
+  children:
+    - xmlinc:
+        file: "screenpart_Window.ymlinc"
+        position: "center"
+        size: "$window_full_width,$window_full_height"
+        window_inset_x: "$window_full_body_x"
+    - xmlinc:
+        file: "screenpart_PictureEditBody.ymlinc"

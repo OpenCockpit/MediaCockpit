@@ -454,6 +454,84 @@ msgstr "Sortierung auf manuell gestellt."
 msgid "Press the red key to leave MediaCockpit."
 msgstr "Zum Verlassen von MediaCockpit die rote Taste drücken."
 
+msgid "Delete"
+msgstr "Löschen"
+
+msgid "Rotate"
+msgstr "Drehen"
+
+msgid "Turn 90°"
+msgstr "90° drehen"
+
+msgid "Crop"
+msgstr "Zuschneiden"
+
+msgid "Delete picture"
+msgstr "Bild löschen"
+
+msgid "Rotate picture by 90 degrees"
+msgstr "Bild um 90 Grad drehen"
+
+msgid "Crop picture"
+msgstr "Bild zuschneiden"
+
+msgid "This kind of picture cannot be edited"
+msgstr "Dieses Bildformat kann nicht bearbeitet werden"
+
+msgid "Delete this picture?"
+msgstr "Dieses Bild löschen?"
+
+msgid "The picture could not be deleted"
+msgstr "Das Bild konnte nicht gelöscht werden"
+
+msgid "Save"
+msgstr "Speichern"
+
+msgid "Reset"
+msgstr "Zurücksetzen"
+
+msgid "Saving picture..."
+msgstr "Bild wird gespeichert..."
+
+msgid "The picture could not be saved"
+msgstr "Das Bild konnte nicht gespeichert werden"
+
+msgid "Cut corners"
+msgstr "Ecken abschneiden"
+
+msgid "Rotate clockwise"
+msgstr "Im Uhrzeigersinn drehen"
+
+msgid "Rotate counterclockwise"
+msgstr "Gegen den Uhrzeigersinn drehen"
+
+msgid "Cut away the empty corners"
+msgstr "Leere Ecken abschneiden"
+
+msgid "Angle"
+msgstr "Winkel"
+
+msgid "Frame"
+msgstr "Rahmen"
+
+msgid "Smaller frame"
+msgstr "Kleinerer Rahmen"
+
+msgid "Bigger frame"
+msgstr "Größerer Rahmen"
+
+msgid "Move frame left"
+msgstr "Rahmen nach links"
+
+msgid "Move frame right"
+msgstr "Rahmen nach rechts"
+
+msgid "Move frame up"
+msgstr "Rahmen nach oben"
+
+msgid "Move frame down"
+msgstr "Rahmen nach unten"
+
 msgid "Log level"
 msgstr "Debug Log-Stufe"
 

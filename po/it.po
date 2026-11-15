@@ -448,6 +448,90 @@ msgstr "Ordinamento impostato su manuale."
 msgid "Press the red key to leave MediaCockpit."
 msgstr "Premere il tasto rosso per uscire da MediaCockpit."
 
+msgid "Delete"
+msgstr "Elimina"
+
+msgid "Rotate"
+msgstr "Ruota"
+
+msgid "Turn 90°"
+msgstr "Ruota di 90°"
+
+msgid "Crop"
+msgstr "Ritaglia"
+
+msgid "Delete picture"
+msgstr "Elimina immagine"
+
+msgid "Rotate picture by 90 degrees"
+msgstr "Ruota l'immagine di 90 gradi"
+
+msgid "Crop picture"
+msgstr "Ritaglia immagine"
+
+msgid "This kind of picture cannot be edited"
+msgstr "Questo tipo di immagine non può essere modificato"
+
+msgid "Delete this picture?"
+msgstr "Eliminare questa immagine?"
+
+msgid "The picture could not be deleted"
+msgstr "Impossibile eliminare l'immagine"
+
+msgid "Save"
+msgstr "Salva"
+
+msgid "Reset"
+msgstr "Ripristina"
+
+msgid "Saving picture..."
+msgstr "Salvataggio dell'immagine..."
+
+msgid "The picture could not be saved"
+msgstr "Impossibile salvare l'immagine"
+
+msgid "Cut corners"
+msgstr "Taglia gli angoli"
+
+msgid "Rotate clockwise"
+msgstr "Ruota in senso orario"
+
+msgid "Rotate counterclockwise"
+msgstr "Ruota in senso antiorario"
+
+msgid "Cut away the empty corners"
+msgstr "Taglia gli angoli vuoti"
+
+msgid "Angle"
+msgstr "Angolo"
+
+msgid "Frame"
+msgstr "Cornice"
+
+msgid "Smaller frame"
+msgstr "Cornice più piccola"
+
+msgid "Bigger frame"
+msgstr "Cornice più grande"
+
+msgid "Move frame left"
+msgstr "Sposta la cornice a sinistra"
+
+msgid "Move frame right"
+msgstr "Sposta la cornice a destra"
+
+msgid "Move frame up"
+msgstr "Sposta la cornice in alto"
+
+msgid "Move frame down"
+msgstr "Sposta la cornice in basso"
+
+msgid "on"
+msgstr "attivo"
+
+msgid "off"
+msgstr "disattivo"
+
 msgid "Infobar/Play"
 msgstr ""
 

@@ -9,7 +9,11 @@ skin:
     - xmlinc:
         file: "screen_MediaCockpitSummary.ymlinc"
     - xmlinc:
-        file: "screen_Slideshow.ymlinc"
+        file: "screen_PictureEditor.ymlinc"
+    - xmlinc:
+        file: "screen_PictureRotate.ymlinc"
+    - xmlinc:
+        file: "screen_PictureCrop.ymlinc"
     - xmlinc:
         file: "screen_MediaInfo.ymlinc"
     - xmlinc:

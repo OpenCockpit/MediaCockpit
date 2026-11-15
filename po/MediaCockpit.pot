@@ -458,6 +458,84 @@ msgstr ""
 msgid "Press the red key to leave MediaCockpit."
 msgstr ""
 
+msgid "Delete"
+msgstr ""
+
+msgid "Rotate"
+msgstr ""
+
+msgid "Turn 90°"
+msgstr ""
+
+msgid "Crop"
+msgstr ""
+
+msgid "Delete picture"
+msgstr ""
+
+msgid "Rotate picture by 90 degrees"
+msgstr ""
+
+msgid "Crop picture"
+msgstr ""
+
+msgid "This kind of picture cannot be edited"
+msgstr ""
+
+msgid "Delete this picture?"
+msgstr ""
+
+msgid "The picture could not be deleted"
+msgstr ""
+
+msgid "Save"
+msgstr ""
+
+msgid "Reset"
+msgstr ""
+
+msgid "Saving picture..."
+msgstr ""
+
+msgid "The picture could not be saved"
+msgstr ""
+
+msgid "Cut corners"
+msgstr ""
+
+msgid "Rotate clockwise"
+msgstr ""
+
+msgid "Rotate counterclockwise"
+msgstr ""
+
+msgid "Cut away the empty corners"
+msgstr ""
+
+msgid "Angle"
+msgstr ""
+
+msgid "Frame"
+msgstr ""
+
+msgid "Smaller frame"
+msgstr ""
+
+msgid "Bigger frame"
+msgstr ""
+
+msgid "Move frame left"
+msgstr ""
+
+msgid "Move frame right"
+msgstr ""
+
+msgid "Move frame up"
+msgstr ""
+
+msgid "Move frame down"
+msgstr ""
+
 msgid "Log level"
 msgstr ""
 

@@ -150,7 +150,7 @@
 		<widget font="FdLcD;60" foregroundColor="FdLcdTitleForeground" halign="center" position="0,0" render="Label" size="392,75" source="parent.lcd_title" transparent="1" valign="top"/>
 		<widget font="FdLcD;60" halign="center" position="0,75" render="Label" size="392,165" source="parent.lcd_info" transparent="1" valign="center"/>
 	</screen>
-	<screen backgroundColor="md_transparent" flags="wfNoBorder" name="Slideshow" position="fill" resolution="1920,1080">
+	<screen backgroundColor="md_transparent" flags="wfNoBorder" name="PictureEditor" position="fill" resolution="1920,1080">
 		<widget name="picture_background" position="0,0" size="1920,1080" zPosition="30"/>
 		<widget name="picture" position="0,0" scaleFlags="scaleCenter" size="1920,1080" zPosition="31"/>
 		<widget name="image" position="0,0" size="1920,1080" zPosition="32"/>
@@ -165,6 +165,39 @@
 		<widget font="Roboto;26" foregroundColor="md_on_surface" name="osd_info" noWrap="1" position="284,22" size="1430,34" transparent="1" valign="center" zPosition="40"/>
 		<widget name="body" position="30,90" size="1860,909" transparent="1" zPosition="-5"/>
 		<widget backgroundColor="md_scrim" cornerRadius="16" font="Roboto;22" foregroundColor="md_on_surface" halign="center" name="toast" position="560,72" size="800,52" valign="center" zPosition="50"/>
+	</screen>
+	<screen backgroundColor="md_transparent" flags="wfNoBorder" name="PictureRotate" position="fill" resolution="1920,1080">
+		<eLabel backgroundColor="md_surface_container_high" cornerRadius="16" position="4,4" size="1912,1071" zPosition="-11"/>
+		<eLabel backgroundColor="md_surface" cornerRadius="14" position="6,66" size="1908,947" zPosition="-10"/>
+		<widget backgroundColor="md_surface_container_low" font="RobotoMedium;36" foregroundColor="md_on_surface" halign="right" position="1770,6" render="Label" size="120,60" source="global.CurrentTime" transparent="1" valign="center" zPosition="20">
+			<convert type="ClockToText">Default</convert>
+		</widget>
+		<eLabel backgroundColor="md_surface_container_high" position="30,7" size="1740,60" zPosition="19"/>
+		<widget addon="ScreenHeader" backgroundColor="md_surface_container_high" connection="Image,Title,ScreenPath" pathFont="RobotoMedium;18" pathForegroundColor="md_primary" position="30,6" size="1740,60" titleFont="RobotoMedium;28" titleForegroundColor="md_primary" titleSingleFont="RobotoMedium;42" transparent="1" zPosition="20"/>
+		<widget actionButtonsPos="farRight" addon="ScreenButtonsBar" backgroundColor="md_surface_container_high" connection="key_red,key_green,key_yellow,key_blue,key_play,key_previous,key_left,key_info,key_help,key_pvr,key_menu,key_text,VKeyIcon,key_next,key_right,key_0" font="Roboto;26" layoutStyle="fluid" pixmaps="key_red:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_red.png,key_green:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_green.png,key_yellow:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_yellow.png,key_blue:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_blue.png,key_play:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_play.png,key_info:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_info.png,key_help:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_help.png,key_pvr:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_pvr.png,key_menu:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_menu.png,key_text:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_text.png,VKeyIcon:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_text.png,key_previous:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_prev.png,key_next:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_next.png,key_left:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_left.png,key_right:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_right.png,key_0:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_0.png" position="30,1027" size="1860,36" spacingActionColorGroups="60" spacingColor="120" spacingPixmapText="10" zPosition="10"/>
+		<widget name="body" position="30,90" size="1860,909" transparent="1" zPosition="-5"/>
+		<widget name="preview" position="30,90" size="1860,909" zPosition="31"/>
+		<widget font="Roboto;26" foregroundColor="md_on_surface" halign="right" name="osd_info" noWrap="1" position="764,22" size="950,34" transparent="1" valign="center" zPosition="40"/>
+		<widget backgroundColor="md_scrim" cornerRadius="16" font="Roboto;22" foregroundColor="md_on_surface" halign="center" name="toast" position="560,72" size="800,52" valign="center" zPosition="50"/>
+	</screen>
+	<screen backgroundColor="md_transparent" flags="wfNoBorder" name="PictureCrop" position="fill" resolution="1920,1080">
+		<eLabel backgroundColor="md_surface_container_high" cornerRadius="16" position="4,4" size="1912,1071" zPosition="-11"/>
+		<eLabel backgroundColor="md_surface" cornerRadius="14" position="6,66" size="1908,947" zPosition="-10"/>
+		<widget backgroundColor="md_surface_container_low" font="RobotoMedium;36" foregroundColor="md_on_surface" halign="right" position="1770,6" render="Label" size="120,60" source="global.CurrentTime" transparent="1" valign="center" zPosition="20">
+			<convert type="ClockToText">Default</convert>
+		</widget>
+		<eLabel backgroundColor="md_surface_container_high" position="30,7" size="1740,60" zPosition="19"/>
+		<widget addon="ScreenHeader" backgroundColor="md_surface_container_high" connection="Image,Title,ScreenPath" pathFont="RobotoMedium;18" pathForegroundColor="md_primary" position="30,6" size="1740,60" titleFont="RobotoMedium;28" titleForegroundColor="md_primary" titleSingleFont="RobotoMedium;42" transparent="1" zPosition="20"/>
+		<widget actionButtonsPos="farRight" addon="ScreenButtonsBar" backgroundColor="md_surface_container_high" connection="key_red,key_green,key_yellow,key_blue,key_play,key_previous,key_left,key_info,key_help,key_pvr,key_menu,key_text,VKeyIcon,key_next,key_right,key_0" font="Roboto;26" layoutStyle="fluid" pixmaps="key_red:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_red.png,key_green:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_green.png,key_yellow:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_yellow.png,key_blue:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_blue.png,key_play:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_play.png,key_info:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_info.png,key_help:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_help.png,key_pvr:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_pvr.png,key_menu:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_menu.png,key_text:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_text.png,VKeyIcon:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_text.png,key_previous:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_prev.png,key_next:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_next.png,key_left:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_left.png,key_right:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_right.png,key_0:/usr/lib/enigma2/python/Plugins/Extensions/MediaCockpit/skin/images/buttons/key_0.png" position="30,1027" size="1860,36" spacingActionColorGroups="60" spacingColor="120" spacingPixmapText="10" zPosition="10"/>
+		<widget name="body" position="30,90" size="1860,909" transparent="1" zPosition="-5"/>
+		<widget name="preview" position="30,90" size="1860,909" zPosition="31"/>
+		<widget font="Roboto;26" foregroundColor="md_on_surface" halign="right" name="osd_info" noWrap="1" position="764,22" size="950,34" transparent="1" valign="center" zPosition="40"/>
+		<widget backgroundColor="md_scrim" cornerRadius="16" font="Roboto;22" foregroundColor="md_on_surface" halign="center" name="toast" position="560,72" size="800,52" valign="center" zPosition="50"/>
+		<widget backgroundColor="md_scrim" name="dim_top" position="4,4" size="0,0" zPosition="33"/>
+		<widget backgroundColor="md_scrim" name="dim_bottom" position="4,4" size="0,0" zPosition="33"/>
+		<widget backgroundColor="md_scrim" name="dim_left" position="4,4" size="0,0" zPosition="33"/>
+		<widget backgroundColor="md_scrim" name="dim_right" position="4,4" size="0,0" zPosition="33"/>
+		<widget borderColor="md_primary" borderWidth="3" name="frame" position="4,4" size="0,0" transparent="1" zPosition="34"/>
 	</screen>
 	<screen backgroundColor="md_transparent" flags="wfNoBorder" name="MediaInfo" position="fill" resolution="1920,1080">
 		<eLabel backgroundColor="md_surface_container_high" cornerRadius="16" position="96,54" size="1728,972" zPosition="-11"/>

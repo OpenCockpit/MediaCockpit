@@ -1,0 +1,46 @@
+screen:
+  backgroundColor: "md_transparent"
+  name: "PictureCrop"
+  position: "fill"
+  resolution: "1920,1080"
+  children:
+    - xmlinc:
+        file: "screenpart_Window.ymlinc"
+        position: "center"
+        size: "$window_full_width,$window_full_height"
+        window_inset_x: "$window_full_body_x"
+    - xmlinc:
+        file: "screenpart_PictureEditBody.ymlinc"
+    # The frame of the crop: the dimmed picture outside of it, and its border. The screen moves and resizes them.
+    - widget:
+        backgroundColor: "md_scrim"
+        name: "dim_top"
+        position: "0,0"
+        size: "0,0"
+        zPosition: "33"
+    - widget:
+        backgroundColor: "md_scrim"
+        name: "dim_bottom"
+        position: "0,0"
+        size: "0,0"
+        zPosition: "33"
+    - widget:
+        backgroundColor: "md_scrim"
+        name: "dim_left"
+        position: "0,0"
+        size: "0,0"
+        zPosition: "33"
+    - widget:
+        backgroundColor: "md_scrim"
+        name: "dim_right"
+        position: "0,0"
+        size: "0,0"
+        zPosition: "33"
+    - widget:
+        borderColor: "md_primary"
+        borderWidth: "3"
+        name: "frame"
+        position: "0,0"
+        size: "0,0"
+        transparent: "1"
+        zPosition: "34"

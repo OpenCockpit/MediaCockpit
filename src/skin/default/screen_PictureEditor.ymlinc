@@ -1,6 +1,6 @@
 screen:
   backgroundColor: "md_transparent"
-  name: "Slideshow"
+  name: "PictureEditor"
   position: "fill"
   resolution: "1920,1080"
   children:

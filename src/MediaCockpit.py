@@ -26,7 +26,7 @@ from .FileListUtils import getFile, getDir, getPath, getIndex, nextIndex, findMe
 from .FileUtils import deleteFile, deleteFiles
 from .MediaInfo import MediaInfo
 from .Tiles import Tiles
-from .Slideshow import Slideshow
+from .PictureEditor import PictureEditor
 from .ListStates import createListMachine, SLIDESHOW, PICTURE, MOVIE, MUSIC, DIR, UP, PLAYLIST, UNAVAILABLE, NONE
 from .ReturnTarget import ReturnTarget, parentTarget
 from .Toast import Toast
@@ -70,7 +70,7 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         # service makes the service list search all bouquets (~0.5 s, main thread blocked), so it is only done when needed:
         # whenever the screen is shown, except after a slideshow in which no video was played (the video plane was not touched).
         self.clear_video_buffer = True
-        self.video_played = False   # set by the Slideshow when it plays a video
+        self.video_played = False   # set by the PictureEditor when it plays a video
         self.service_center = ServiceCenter()
         self.target = ReturnTarget()    # where the tile screen goes back to when it is shown again
         self.transcoder = Transcoder()  # converts the video that the decoder cannot play, while the player shows it
@@ -327,7 +327,7 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
     def processOk(self):
         self.sm.dispatch("OK")
 
-    def SlideshowCallback(self, path):
+    def PictureEditorCallback(self, path):
         self.closed_path = path
         self.sm.dispatch("SLIDESHOW_CLOSED")
 
@@ -382,14 +382,14 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         start_path = getPath(self.file_list, findMediaIndex(self.file_list, self.file_index))
         self.media_index = getIndex(self.media_list, start_path)
         self.hide()
-        self.session.openWithCallback(self.SlideshowCallback, Slideshow, self,
+        self.session.openWithCallback(self.PictureEditorCallback, PictureEditor, self,
                                       self.media_list, self.media_index, self.slideshow, self.song_list)
 
     def do_open_viewer(self):
         """A single picture: the slideshow screen without a running slideshow."""
         self.hide()
         media_index = getIndex(self.media_list, self.selectedPath())
-        self.session.openWithCallback(self.SlideshowCallback, Slideshow, self, self.media_list, media_index, False)
+        self.session.openWithCallback(self.PictureEditorCallback, PictureEditor, self, self.media_list, media_index, False)
 
     def do_open_movie(self):
         self.hide()
