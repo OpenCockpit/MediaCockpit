@@ -37,18 +37,6 @@ msgstr ""
 msgid "None"
 msgstr ""
 
-msgid "Date sort down"
-msgstr ""
-
-msgid "Date sort up"
-msgstr ""
-
-msgid "Alpha sort up"
-msgstr ""
-
-msgid "Alpha sort down"
-msgstr ""
-
 msgid "beginning"
 msgstr ""
 
@@ -70,12 +58,6 @@ msgid "Sort"
 msgstr ""
 
 msgid "Select the list sort mode."
-msgstr ""
-
-msgid "Sort across directories"
-msgstr ""
-
-msgid "Should directories be sorted recursively?"
 msgstr ""
 
 msgid "Show parent directory tile"
@@ -201,12 +183,6 @@ msgstr ""
 msgid "Can't load directory because it is not mounted."
 msgstr ""
 
-msgid "Do you really want to load the following bookmark?"
-msgstr ""
-
-msgid "Can't load bookmark because it is not mounted."
-msgstr ""
-
 msgid "Thumbnail"
 msgstr ""
 
@@ -277,9 +253,6 @@ msgid "GPS Longitude"
 msgstr ""
 
 msgid "Exif Version"
-msgstr ""
-
-msgid "Load cache bookmark"
 msgstr ""
 
 msgid "Setup"
@@ -443,9 +416,6 @@ msgstr ""
 msgid "Move file forward"
 msgstr ""
 
-msgid "The entries of a playlist cannot be moved."
-msgstr ""
-
 msgid "This is the first file."
 msgstr ""
 
@@ -546,6 +516,51 @@ msgid "Do you really want to delete the folder and everything in it?"
 msgstr ""
 
 msgid "The folder could not be deleted."
+msgstr ""
+
+msgid "Date, oldest first"
+msgstr ""
+
+msgid "Date, newest first"
+msgstr ""
+
+msgid "Name A-Z"
+msgstr ""
+
+msgid "Name Z-A"
+msgstr ""
+
+msgid "Remove from playlist"
+msgstr ""
+
+msgid "Add to playlist"
+msgstr ""
+
+msgid "New playlist..."
+msgstr ""
+
+msgid "Name of the new playlist"
+msgstr ""
+
+msgid "Added to %s."
+msgstr ""
+
+msgid "Already in %s."
+msgstr ""
+
+msgid "Removed from the playlist."
+msgstr ""
+
+msgid "The playlist cannot be written: %s"
+msgstr ""
+
+msgid "This name cannot be used."
+msgstr ""
+
+msgid "A playlist with this name exists already."
+msgstr ""
+
+msgid "The entry is not in the playlist."
 msgstr ""
 
 msgid "Log level"

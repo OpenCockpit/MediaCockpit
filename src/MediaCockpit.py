@@ -20,7 +20,7 @@ from .__init__ import _
 from .Version import ID, PLUGIN
 from .Debug import logger
 from .FileManagerUtils import FILE_OP_LOAD, FILE_OP_DELETE
-from .FileManagerUtils import MDC_IDX_MEDIA, MDC_IDX_PATH, MDC_IDX_TYPE, MDC_IDX_BOOKMARK
+from .FileManagerUtils import MDC_IDX_MEDIA, MDC_IDX_PATH, MDC_IDX_TYPE
 from .FileManagerUtils import MDC_TYPE_FILE, MDC_TYPE_DIR, MDC_MEDIA_TYPE_FILE, MDC_MEDIA_TYPE_UP, MDC_MEDIA_TYPE_DIR, MDC_MEDIA_TYPE_PLAYLIST, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE, MDC_MEDIA_TYPE_MUSIC, MDC_MEDIA_TYPE_UNAVAILABLE
 from .FileListUtils import getFile, getDir, getPath, getIndex, nextIndex, findMediaIndex, splitMediaSongList, scanPlaylistFiles
 from .FileUtils import deleteFile, deleteFiles
@@ -29,7 +29,7 @@ from .MediaInfo import MediaInfo
 from .Tiles import Tiles
 from .PictureEditor import PictureEditor
 from .ListStates import createListMachine, SLIDESHOW, PICTURE, MOVIE, MUSIC, DIR, UP, PLAYLIST, UNAVAILABLE, NONE
-from .ReturnTarget import ReturnTarget, parentTarget, forgetDeleted, treeOrder
+from .ReturnTarget import ReturnTarget, parentTarget, forgetDeleted, treeOrder, showStart
 from .Toast import Toast
 from .CockpitPlayer import CockpitPlayer
 from .CockpitMusicPlayer import CockpitMusicPlayer
@@ -39,10 +39,11 @@ from .Transcoder import Transcoder, LISTEN_DELAY
 from .ServiceCenter import ServiceCenter
 from .FileListUtils import createBookmarkEntries, createParentDirEntry, createUnavailableEntry, sortList, getPosition
 from .ConfigInit import MANUAL_SORT
-from .OrderUtils import writeOrder, positionsOf, moved
+from .OrderUtils import readOrder, writeOrder, positionsOf, moved, extended
 from .MediaCockpitSummary import MediaCockpitSummary
 from .FileManagerProgress import FileManagerProgress
 from .Menu import Menu
+from .PlaylistEditor import PlaylistEditor
 from .SetupScreen import SetupScreen
 
 
@@ -52,7 +53,7 @@ LOAD_DIR, LOAD_TREE = "dir", "tree"     # the answers of the load cache director
 PLAYLIST_LOAD_LIMIT = 50    # playlist files that are added to the cache each time a playlist is read
 
 
-class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
+class MediaCockpit(Screen, Tiles, Menu, PlaylistEditor, HelpableScreen):
 
     def __init__(self, session):
         logger.info("session: %s", session)
@@ -67,7 +68,9 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         self.song_list = []
         self.tree_root = ""         # the folder whose slideshow is open (PLAY on a folder tile), "" otherwise
         self.tree_media, self.tree_songs = [], []     # its pictures and videos, and songs, with those of the folders below it
+        self.dir_starts = {}        # a playlist with folders: the place of the first picture or video of each folder in media_list
         self.playlist_path = ""     # the .m3u whose entries are listed, "" when a folder is shown
+        self.order_failed = set()   # folders whose order file cannot be written (read-only): not tried again
         self.first_start = True
         # The live service is restarted and stopped again to clear the video plane ("clear video buffer"). Every play of the
         # service makes the service list search all bouquets (~0.5 s, main thread blocked), so it is only done when needed:
@@ -208,9 +211,14 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
                     self.file_list.append(createParentDirEntry(load_dir))
                 self.file_list += sortList(
                     FileManager.getInstance(ID).getDirList(load_dir))
-                self.file_list += sortList(
-                    FileManager.getInstance(ID).getFileList(load_dir))
+                files = sortList(FileManager.getInstance(ID).getFileList(load_dir))
+                if self.completeOrder(load_dir, files):
+                    files = sortList(FileManager.getInstance(ID).getFileList(load_dir))     # now with their places
+                self.file_list += files
         self.media_list, self.song_list = splitMediaSongList(self.file_list)
+        self.dir_starts = {}
+        if self.playlist_path:
+            self.expandPlaylistFolders()
         self.file_index = getIndex(self.file_list, load_path)
         if self.file_index >= 0:
             logger.debug("file_index: %s, path: %s, len(file_list): %s", self.file_index, getPath(
@@ -239,6 +247,33 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
                 self.toast.show(_("%d entries of the playlist are not in the cache yet. Open the playlist again to add more, or load their directory with the yellow key.") % len(later))
         return [files[path] if path in files else createUnavailableEntry(path) for path in paths]
 
+    def completeOrder(self, adir, files):
+        """In the manual sort mode the order file of a folder is the only order: files that are not in it (new ones) are added at
+        its end, in the order they are shown in (by date and name), and their places are stored in the cache. Returns True if
+        the order file was extended. Nothing is done when every file has a place (no access to the disk then), or when the folder
+        cannot be written: the files are shown in that order anyway, only the file does not know them."""
+        if config.plugins.mediacockpit.sort.value != MANUAL_SORT or adir in self.order_failed:
+            return False
+        files = [entry for entry in files if entry[MDC_IDX_TYPE] == MDC_TYPE_FILE and entry[MDC_IDX_MEDIA] in MDC_MEDIA_TYPE_FILE]
+        if all(getPosition(entry) for entry in files):
+            return False
+        names = [os.path.basename(entry[MDC_IDX_PATH]) for entry in files]
+        order = extended(readOrder(adir), names)
+        if order is None:
+            return False
+        try:
+            writeOrder(adir, order)
+        except OSError as e:
+            logger.warning("cannot extend the order of %s: %s", adir, e)
+            self.order_failed.add(adir)
+            return False
+        positions = positionsOf(order)
+        FileManager.getInstance(ID).setPositions(
+            {entry[MDC_IDX_PATH]: positions[os.path.basename(entry[MDC_IDX_PATH])] for entry in files
+             if getPosition(entry) != positions[os.path.basename(entry[MDC_IDX_PATH])]})
+        logger.info("%s: the order was extended, it has %s names now", adir, len(order))
+        return True
+
     def moveBackward(self):
         self.moveEntry(-1)
 
@@ -249,12 +284,12 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         """Move the selected file one place backward (-1) or forward (+1) in its folder. The order is stored in the folder (a file
         .mediacockpit_order, see OrderUtils) and in the cache, and the folder is shown in the manual sort mode from then on. The
         first move stores the order the files are shown in now, so that nothing else changes place."""
+        if self.playlist_path:
+            self.playlistMove(step)     # the order of a playlist is the order of its file
+            return
         afile = getFile(self.file_list, self.file_index)
         if not afile or afile[MDC_IDX_TYPE] != MDC_TYPE_FILE or afile[MDC_IDX_MEDIA] not in MDC_MEDIA_TYPE_FILE:
             return      # a folder, the parent tile, a playlist or an unavailable entry has no place of its own
-        if self.playlist_path:
-            self.toast.show(_("The entries of a playlist cannot be moved."))
-            return
         adir = self.current_dir
         files = [entry for entry in self.file_list if entry[MDC_IDX_TYPE] == MDC_TYPE_FILE and entry[MDC_IDX_MEDIA] in MDC_MEDIA_TYPE_FILE]
         names = [os.path.basename(entry[MDC_IDX_PATH]) for entry in files]
@@ -321,7 +356,7 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         return {
             "media": media,
             "next_media": MEDIA_NAMES.get(self.file_list[(self.file_index + 1) % len(self.file_list)][MDC_IDX_MEDIA], NONE) if afile else NONE,
-            "has_media": findMediaIndex(self.file_list, self.file_index) >= 0 and bool(self.media_list),
+            "has_media": bool(self.media_list) and (findMediaIndex(self.file_list, self.file_index) >= 0 or bool(self.dir_starts)),
             "has_songs": bool(self.song_list),
             "tree_has_media": bool(self.tree_media),
         }
@@ -386,20 +421,48 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
 
     def do_open_slideshow(self):
         # start at the selected entry, or at the next picture/movie when it is a folder, parent tile or song
-        start_path = getPath(self.file_list, findMediaIndex(self.file_list, self.file_index))
-        self.media_index = getIndex(self.media_list, start_path)
+        if self.dir_starts:
+            self.media_index = showStart(self.file_list, self.file_index, {afile[MDC_IDX_PATH]: i for i, afile in enumerate(self.media_list)},
+                                         self.dir_starts, MDC_IDX_PATH)
+        else:
+            start_path = getPath(self.file_list, findMediaIndex(self.file_list, self.file_index))
+            self.media_index = getIndex(self.media_list, start_path)
         self.hide()
         self.session.openWithCallback(self.PictureEditorCallback, PictureEditor, self,
                                       self.media_list, self.media_index, self.slideshow, self.song_list)
 
-    def do_read_tree(self):
-        """PLAY on a folder: its pictures and videos, and those of all folders below it, from the cache, in the order of the tiles (subfolders first, each with what is in it, then the files)."""
-        root = self.selectedPath()
+    def treeEntries(self, root):
+        """The pictures and videos, and the songs, of a folder and all folders below it, from the cache, in the order of the tiles
+        (subfolders first, each with what is in it, then the files)."""
         file_manager = FileManager.getInstance(ID)
         dirs = file_manager.getDirList(root) + file_manager.getDirList(root, True)   # recursive does not have the direct subfolders: they are in root itself
         files = file_manager.getFileList(root) + file_manager.getFileList(root, True)   # the folder itself, and (recursive) the ones below it
+        return splitMediaSongList(treeOrder(root, dirs, files, MDC_IDX_PATH, sortList))
+
+    def expandPlaylistFolders(self):
+        """A playlist can name folders: for a slideshow they are what PLAY on the folder tile shows, in the place of the entry. The tiles
+        keep showing the folder."""
+        media, songs, starts = [], [], {}
+        files = {afile[MDC_IDX_PATH] for afile in self.media_list + self.song_list}
+        for afile in self.file_list:
+            path = afile[MDC_IDX_PATH]
+            if afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_DIR and afile[MDC_IDX_TYPE] == MDC_TYPE_DIR:
+                folder_media, folder_songs = self.treeEntries(path)
+                if folder_media:
+                    starts[path] = len(media)
+                media += folder_media
+                songs += folder_songs
+            elif path in files:
+                (songs if afile[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_MUSIC else media).append(afile)
+        if starts or len(media) != len(self.media_list) or len(songs) != len(self.song_list):
+            logger.info("playlist with folders: pictures and videos: %s, songs: %s", len(media), len(songs))
+            self.media_list, self.song_list, self.dir_starts = media, songs, starts
+
+    def do_read_tree(self):
+        """PLAY on a folder: its pictures and videos, and those of all folders below it."""
+        root = self.selectedPath()
         self.tree_root = root
-        self.tree_media, self.tree_songs = splitMediaSongList(treeOrder(root, dirs, files, MDC_IDX_PATH, sortList))
+        self.tree_media, self.tree_songs = self.treeEntries(root)
         logger.info("root: %s, pictures and videos: %s, songs: %s", root, len(self.tree_media), len(self.tree_songs))
 
     def do_toast_empty_tree(self):
@@ -619,28 +682,3 @@ class MediaCockpit(Screen, Tiles, Menu, HelpableScreen):
         self.session.open(FileManagerProgress, FILE_OP_LOAD)
         self.target.folder(adir, getPath(self.file_list, self.file_index))
         logger.debug("target: %s", self.target)
-
-    def loadCacheBookmark(self):
-        if not self.file_list:
-            return
-        if self.is_mounted:
-            self.session.openWithCallback(
-                self.loadCacheBookmarkResponse,
-                MessageBox,
-                _("Do you really want to load the following bookmark?") + "\n" + getFile(self.file_list, self.file_index)[MDC_IDX_BOOKMARK],
-                MessageBox.TYPE_YESNO
-            )
-        else:
-            self.session.open(
-                MessageBox,
-                _("Can't load bookmark because it is not mounted."),
-                MessageBox.TYPE_INFO
-            )
-
-    def loadCacheBookmarkResponse(self, response):
-        if response:
-            FileManager.getInstance(ID).loadDatabaseDir(
-                getFile(self.file_list, self.file_index)[MDC_IDX_BOOKMARK], True)
-            self.session.open(FileManagerProgress, FILE_OP_LOAD)
-            self.target.folder(getFile(self.file_list, self.file_index)[MDC_IDX_BOOKMARK])
-            logger.debug("target: %s", self.target)

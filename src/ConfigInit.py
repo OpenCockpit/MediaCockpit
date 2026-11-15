@@ -14,10 +14,10 @@ SortConfig = namedtuple('SortConfig', ['sort_type', 'reverse'])
 SortMode = namedtuple('SortMode', ['config', 'description'])
 
 sort_modes = {
-    "0": SortMode(SortConfig("date", False), _("Date sort down")),
-    "1": SortMode(SortConfig("date", True), _("Date sort up")),
-    "2": SortMode(SortConfig("alpha", False), _("Alpha sort up")),
-    "3": SortMode(SortConfig("alpha", True), _("Alpha sort down")),
+    "0": SortMode(SortConfig("date", False), _("Date, oldest first")),
+    "1": SortMode(SortConfig("date", True), _("Date, newest first")),
+    "2": SortMode(SortConfig("name", False), _("Name A-Z")),
+    "3": SortMode(SortConfig("name", True), _("Name Z-A")),
     "4": SortMode(SortConfig("manual", False), _("Manual sort")),
 }
 MANUAL_SORT = "4"
@@ -54,6 +54,7 @@ if not hasattr(config.plugins, "mediacockpit"):
 config.plugins.mediacockpit.sort = ConfigSelection(
     default="2", choices=choices_sort)
 config.plugins.mediacockpit.last_path = ConfigText(default="")
+config.plugins.mediacockpit.last_playlist = ConfigText(default="")    # the playlist that a file was added to last
 config.plugins.mediacockpit.start_home_dir = ConfigYesNo(default=True)
 config.plugins.mediacockpit.frame = ConfigYesNo(default=True)
 config.plugins.mediacockpit.create_thumbnails = ConfigYesNo(
@@ -79,8 +80,6 @@ config.plugins.mediacockpit.transition_duration = ConfigSelection(
 config.plugins.mediacockpit.transition_quality = ConfigSelection(
     default="normal", choices=[("low", _("low")), ("normal", _("normal")), ("high", _("high"))])
 config.plugins.mediacockpit.kenburns = ConfigYesNo(default=False)
-config.plugins.mediacockpit.sort_across_dirs = ConfigYesNo(
-    default=False)
 config.plugins.mediacockpit.database_directory = ConfigDirectory(
     default="/etc/enigma2")
 config.plugins.mediacockpit.movie_resume_at_last_pos = ConfigYesNo(

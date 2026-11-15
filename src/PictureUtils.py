@@ -148,7 +148,7 @@ def makeThumbnail(path, size):
                 # (after shrinking, which is much cheaper; the box is square, so the rotation does not matter for it)
                 img = ImageOps.exif_transpose(img)
             out = io.BytesIO()
-            if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+            if img.mode in {"RGBA", "LA"} or (img.mode == "P" and "transparency" in img.info):
                 img.convert("RGBA").save(out, format="PNG")
             else:
                 img.convert("RGB").save(out, format="JPEG", quality=THUMBNAIL_QUALITY)

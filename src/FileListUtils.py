@@ -4,7 +4,6 @@
 
 import os
 import json
-from urllib.parse import unquote
 from Components.config import config
 from Plugins.SystemPlugins.CacheCockpit.FileManager import FileManager
 from .Debug import logger
@@ -12,8 +11,9 @@ from .FileManagerUtils import MDC_TYPE_DIR, MDC_TYPE_FILE, MDC_TYPE_LINK
 from .FileManagerUtils import MDC_IDX_TYPE, MDC_IDX_PATH, MDC_IDX_MEDIA, MDC_IDX_META, MDC_IDX_DATE, MDC_IDX_POSITION
 from .FileManagerUtils import MDC_MEDIA_TYPE_FILE, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE, MDC_MEDIA_TYPE_MUSIC, MDC_MEDIA_TYPE_DIR, MDC_MEDIA_TYPE_UP, MDC_MEDIA_TYPE_UNAVAILABLE
 from .ConfigInit import sort_modes
+from .SortUtils import sortEntries
 from .Version import ID
-from .FileUtils import readFile
+from .PlaylistUtils import readPlaylist
 
 
 def nextIndex(file_index, file_list_length):
@@ -95,70 +95,27 @@ def splitMediaSongList(file_list):
     return media_list, song_list
 
 
-NOT_IN_ORDER = 1 << 30
-
-
 def getPosition(afile):
     """Place of a list entry in the manual order of its folder, 0 if it has none (also for an entry of an older cache)."""
     return afile[MDC_IDX_POSITION] if len(afile) > MDC_IDX_POSITION else 0
 
 
 def sortList(file_list):
-    file_list_sort = config.plugins.mediacockpit.sort.value
-    sort_across_dirs = config.plugins.mediacockpit.sort_across_dirs.value
-    mode, order = sort_modes[file_list_sort][0]
-    logger.debug("sort_mode: %s, sort_order: %s", mode, order)
-
-    if mode == "alpha":
-        if sort_across_dirs:
-            if order:
-                file_list.sort(key=lambda afile: (min(afile[MDC_IDX_MEDIA], MDC_MEDIA_TYPE_PICTURE), os.path.basename(
-                    afile[MDC_IDX_PATH]).lower()), reverse=True)
-            else:
-                file_list.sort(key=lambda afile: (min(
-                    afile[MDC_IDX_MEDIA], MDC_MEDIA_TYPE_PICTURE), os.path.basename(afile[MDC_IDX_PATH]).lower()))
-        elif order:
-            file_list.sort(key=lambda afile: (min(
-                afile[MDC_IDX_MEDIA], MDC_MEDIA_TYPE_PICTURE), afile[MDC_IDX_PATH].lower()), reverse=True)
-        else:
-            file_list.sort(key=lambda afile: (
-                min(afile[MDC_IDX_MEDIA], MDC_MEDIA_TYPE_PICTURE), afile[MDC_IDX_PATH].lower()))
-    elif mode == "date":
-        if order:
-            file_list.sort(key=lambda afile: (min(
-                afile[MDC_IDX_MEDIA], MDC_MEDIA_TYPE_PICTURE), afile[MDC_IDX_DATE]), reverse=True)
-        else:
-            file_list.sort(key=lambda afile: (
-                min(afile[MDC_IDX_MEDIA], MDC_MEDIA_TYPE_PICTURE), afile[MDC_IDX_DATE]))
-    elif mode == "manual":
-        # the files of the order file of the folder first, in its order; the others after them by date and name
-        file_list.sort(key=lambda afile: (min(afile[MDC_IDX_MEDIA], MDC_MEDIA_TYPE_PICTURE), getPosition(afile) or NOT_IN_ORDER,
-                                          afile[MDC_IDX_DATE], afile[MDC_IDX_PATH].lower()))
-    return file_list
+    """Sort the entries of a folder as the setting says (see SortUtils). Folders and playlists stay in front of the files."""
+    mode, reverse = sort_modes[config.plugins.mediacockpit.sort.value][0]
+    logger.debug("sort_mode: %s, reverse: %s", mode, reverse)
+    return sortEntries(file_list, mode, reverse,
+                       name=lambda afile: os.path.basename(afile[MDC_IDX_PATH]),
+                       date=lambda afile: afile[MDC_IDX_DATE],
+                       position=getPosition,
+                       group=lambda afile: min(afile[MDC_IDX_MEDIA], MDC_MEDIA_TYPE_PICTURE))
 
 
 def scanPlaylistFiles(path):
     """The entries of a .m3u as paths, in order. Entries whose file does not exist, and streams, are returned as well: the
     caller shows them as unavailable instead of dropping them without a word."""
     logger.debug("path: %s", path)
-    file_list = []
-    playlist_dir = os.path.dirname(path)
-    lines = readFile(path).lstrip("\ufeff").splitlines()  # a UTF-8 BOM would corrupt the first path
-    for line in lines:
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-        logger.debug("line: %s", line)
-        if line.startswith("file://"):
-            line = unquote(line[len("file://"):])
-        elif "://" in line:
-            logger.debug("stream: %s", line)
-            file_list.append(line)
-            continue
-        if not line.startswith("/"):
-            line = os.path.join(playlist_dir, line)
-        file_list.append(os.path.normpath(line))
-    return file_list
+    return readPlaylist(path).paths()
 
 
 def createBookmarkEntries(bookmarks):

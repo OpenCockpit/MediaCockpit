@@ -171,7 +171,6 @@ class MediaInfo(Screen, HelpableScreen, Display):
             self.file[MDC_IDX_DATE]).strftime("%Y-%m-%d %H:%M:%S")
         alist.append((_("Date"), date_time, None))
         alist.append(("", "", None))
-        filename, ext = os.path.splitext(self.file[MDC_IDX_PATH])
         if self.file[MDC_IDX_MEDIA] == MDC_MEDIA_TYPE_PICTURE:
             self["key_blue"].hide()
             exif_data = getExifData(self.file[MDC_IDX_PATH])

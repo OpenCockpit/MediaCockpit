@@ -34,9 +34,13 @@ class ServicePlayer():
 
     START_TIMEOUT = 8000    # ms until the first frame, else the start is repeated once and then counted as a failure
     RETRIES = 1
+    END_MARGIN = 5000       # ms after the calculated end of a video until it is ended by force (watch_end)
+    END_RETRY = 1000        # ms until the length is asked for again, while the service does not know it yet
+    END_TRIES = 10
 
-    def __init__(self, screen, on_ended, on_started=None):
+    def __init__(self, screen, on_ended, on_started=None, watch_end=False):
         self.session = screen.session
+        self.watch_end = watch_end   # end a video by force when its end does not come (evEOF never arrived for a clip of the slideshow)
         self.on_ended = on_ended
         self.on_started = on_started
         self.failures = 0
@@ -53,6 +57,10 @@ class ServicePlayer():
         # (nextSlide() -> stop()) is not safe.
         self.end_timer = eTimer()
         self.end_timer.callback.append(self._callOnEnded)
+        self.watch_timer = eTimer()
+        self.watch_timer.callback.append(self._watchEnd)
+        self.watch_tries = 0
+        self.watch_probing = False      # the watch timer asks for the length of the video again, not for its end
         # a video that the decoder cannot play is converted by ffmpeg, which needs a moment until it serves the stream
         self.transcoder = Transcoder()
         self.play_timer = eTimer()
@@ -104,6 +112,7 @@ class ServicePlayer():
         """Stop the video. The picture of the next slide covers the video plane, MediaCockpit clears it when it comes back."""
         self.playing = False
         self.started = False
+        self.watch_timer.stop()
         self.start_timer.stop()
         self.end_timer.stop()
         self.play_timer.stop()
@@ -117,8 +126,54 @@ class ServicePlayer():
             self.started = True
             self.start_timer.stop()
             logger.debug("first frame after %.1f s", time.monotonic() - self._begin)
+            if self.watch_end:
+                self.watch_tries = self.END_TRIES
+                self._armWatch()
             if self.on_started:
                 self.on_started()
+
+    def _lengthAndPosition(self):
+        """(length, position) of the video that plays, in 90 kHz ticks; None where the service does not tell."""
+        service = self.session.nav.getCurrentService()
+        seek = service and service.seek()
+        if not seek:
+            return None, None
+        length, position = seek.getLength(), seek.getPlayPosition()
+        return (None if length[0] or length[1] <= 0 else length[1]), (None if position[0] else position[1])
+
+    def _armWatch(self):
+        """The end of the video is expected when its remaining time is over: if evEOF has not come 5 s later, the decoder has stalled at
+        the end (seen: the last frame of a clip stayed on the screen for hours, the slideshow never went on)."""
+        length, position = self._lengthAndPosition()
+        if length is None:
+            if self.watch_tries > 0:
+                self.watch_tries -= 1
+                self.watch_probing = True
+                self.watch_timer.start(self.END_RETRY, True)      # the length is not known right at the start
+            return
+        self.watch_probing = False
+        remaining = max(length - (position or 0), 0) / PTS_PER_SECOND
+        logger.debug("length: %.1f s, position: %.1f s: watching for the end", length / PTS_PER_SECOND, (position or 0) / PTS_PER_SECOND)
+        self.watch_timer.start(int(remaining * 1000) + self.END_MARGIN, True)
+
+    def _watchEnd(self):
+        if not self.playing or not self.started:
+            return
+        if self.watch_probing:       # the timer asks for the length again, the wait for the end has not started
+            self._armWatch()
+            return
+        length, position = self._lengthAndPosition()
+        if length is None:
+            self._armWatch()        # the length was not known yet
+            return
+        remaining = length - (position or 0)
+        if remaining > self.END_MARGIN * PTS_PER_SECOND // 1000:
+            # it plays on (paused, or a slow start): look again when the rest is over
+            self.watch_timer.start(int(remaining / PTS_PER_SECOND * 1000) + self.END_MARGIN, True)
+            return
+        logger.warning("no end of %s although the length of %.1f s is over (position %.1f s): ended", self.path,
+                       length / PTS_PER_SECOND, (position or 0) / PTS_PER_SECOND)
+        self._finish(0)
 
     def _evStart(self):
         if not self.has_first_frame:
@@ -155,6 +210,7 @@ class ServicePlayer():
 
     def _finish(self, ret_val):
         logger.debug("ret_val: %s, runtime: %.1f", ret_val, time.monotonic() - self._begin)
+        self.watch_timer.stop()
         self.playing = False
         self.start_timer.stop()
         self.play_timer.stop()

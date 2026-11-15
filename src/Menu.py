@@ -19,12 +19,12 @@ class Menu():
         logger.info("...")
         alist = [
             (f"{_('Load cache directory')}", "load_cache_dir"),
-            (f"{_('Load cache bookmark')}", "load_cache_bookmark"),
             (f"{_('Show load progress')}", "show_load_progress"),
             (f"{_('Delete')}", "delete_file"),
             (f"{_('Setup')}", "open_setup"),
             (f"{_('About')}", "about")
         ]
+        alist[3:3] = self.playlistMenuEntries()     # before Setup: add to / remove from a playlist
 
         self.session.openWithCallback(
             self.openMenuCallback,
@@ -42,12 +42,14 @@ class Menu():
             screen = answer[1]
             if screen == "load_cache_dir":
                 self.loadCacheDir()
-            elif screen == "load_cache_bookmark":
-                self.loadCacheBookmark()
             elif screen == "show_load_progress":
                 self.session.open(FileManagerProgress, FILE_OP_LOAD)
             elif screen == "delete_file":
                 self.deleteFile()
+            elif screen == "playlist_remove":
+                self.playlistRemove()
+            elif screen == "playlist_add":
+                self.playlistAdd()
             elif screen == "open_setup":
                 self.openConfigScreen()
             elif screen == "about":

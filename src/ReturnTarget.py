@@ -83,8 +83,6 @@ def forgetDeleted(file_list, closed_path, deleted, path_index):
     return remaining, closed_path
 
 
-
-
 def treeOrder(root, dirs, files, path_index, sort):
     """The entries a slideshow of a folder shows, in the order the tiles show them: the subfolders first (each one with everything in it,
     the same way), then the files of the folder. Hidden folders (.Thumbnails) and deleted ones (name.del) are left out with everything in
@@ -106,3 +104,17 @@ def treeOrder(root, dirs, files, path_index, sort):
 
     walk(os.path.normpath(root))
     return shown
+
+
+def showStart(file_list, cursor, media_index, dir_starts, path_index):
+    """Where the slideshow of a playlist starts in the list of its pictures and videos: at the entry under the cursor, or at the next entry
+    (wrapping around) that has something to show. media_index: {path: place in the list} of the files; dir_starts: {path: place of its
+    first picture or video} of the folders in the playlist, which are shown with everything in them. 0 when no entry has anything."""
+    length = len(file_list)
+    for i in range(length):
+        path = file_list[(max(cursor, 0) + i) % length][path_index]
+        if path in dir_starts:
+            return dir_starts[path]
+        if path in media_index:
+            return media_index[path]
+    return 0

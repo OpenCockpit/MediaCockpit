@@ -11,6 +11,7 @@ from enigma import eSize, ePoint, eTimer, gFont
 from enigma import BT_SCALE, BT_HALIGN_CENTER, BT_VALIGN_CENTER, BT_KEEP_ASPECT_RATIO
 from Tools.LoadPixmap import LoadPixmap
 from Plugins.SystemPlugins.MountCockpit.MountCockpit import MountCockpit
+from Plugins.SystemPlugins.CacheCockpit.FileManager import FileManager
 from skin import parseColor
 from .SkinUtils import getSkinPath
 from .PixmapUtils import loadPixmapFromBytes
@@ -19,7 +20,6 @@ from .__init__ import _
 from .FileManagerUtils import MDC_IDX_MEDIA, MDC_IDX_PATH
 from .FileManagerUtils import MDC_MEDIA_TYPE_FILE, MDC_MEDIA_TYPE_UP, MDC_MEDIA_TYPE_DIR, MDC_MEDIA_TYPE_PLAYLIST, MDC_MEDIA_TYPE_PICTURE, MDC_MEDIA_TYPE_MOVIE, MDC_MEDIA_TYPE_MUSIC, MDC_MEDIA_TYPE_UNAVAILABLE
 from .FileListUtils import getDir
-from Plugins.SystemPlugins.CacheCockpit.FileManager import FileManager
 from .Display import Display
 from .Version import ID
 

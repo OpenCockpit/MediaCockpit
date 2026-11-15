@@ -51,6 +51,15 @@ def positionsOf(names):
     return {name: position for position, name in enumerate(names, 1)}
 
 
+def extended(listed, current):
+    """The names of the order file with the files that are not in it added at the end, in the order of current. None if there
+    is no such file. The names of the file stay where they are, also those of files that are not there (they may only be missing
+    in the cache for now)."""
+    known = set(listed)
+    new = [name for name in current if name not in known]
+    return listed + new if new else None
+
+
 def moved(names, name, step):
     """names with name moved by step places (-1 backward, 1 forward), None if it cannot be moved (not there, or already at the end)."""
     if name not in names:

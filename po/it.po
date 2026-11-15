@@ -91,18 +91,6 @@ msgstr "Informazioni"
 msgid "None"
 msgstr "Nessuna"
 
-msgid "Date sort down"
-msgstr "Ordinare (data-)"
-
-msgid "Date sort up"
-msgstr "Ordinare (data+)"
-
-msgid "Alpha sort up"
-msgstr "Ordine alfabetico (A-Z)"
-
-msgid "Alpha sort down"
-msgstr "Ord. alfabetico (Z-A)"
-
 msgid "beginning"
 msgstr "All'inizio"
 
@@ -117,12 +105,6 @@ msgstr "Ordinare"
 
 msgid "Select the list sort mode."
 msgstr "Selezionare l'ordinamento elenco."
-
-msgid "Sort across directories"
-msgstr "Ordinamento tra le directory"
-
-msgid "Should directories be sorted recursively?"
-msgstr "Ordinare le directory in modo ricorsivo?"
 
 msgid "Show parent directory tile"
 msgstr "Mostrare la casella della directory padre"
@@ -331,9 +313,6 @@ msgstr "Caricare directory cache"
 msgid "Can't load directory because it is not mounted."
 msgstr "Impossibile caricare la directory perché non è montata."
 
-msgid "Can't load bookmark because it is not mounted."
-msgstr "Impossibile caricare il segnalibro perché non è montato."
-
 msgid "Menu"
 msgstr "Menu"
 
@@ -343,14 +322,8 @@ msgstr "Inizio elenco"
 msgid "Show load progress"
 msgstr "Mostrare avanzamento caricamento"
 
-msgid "Do you really want to load the following bookmark?"
-msgstr "Caricare davvero il seguente segnalibro?"
-
 msgid "Input"
 msgstr "Input"
-
-msgid "Load cache bookmark"
-msgstr "Caricare segnalibro cache"
 
 msgid "Toggle Transition"
 msgstr "Commutare transizione"
@@ -432,9 +405,6 @@ msgstr "Sposta il file indietro"
 
 msgid "Move file forward"
 msgstr "Sposta il file avanti"
-
-msgid "The entries of a playlist cannot be moved."
-msgstr "Le voci di una playlist non possono essere spostate."
 
 msgid "This is the first file."
 msgstr "Questo è il primo file."
@@ -543,6 +513,51 @@ msgstr "Vuoi davvero eliminare la cartella e tutto il suo contenuto?"
 
 msgid "The folder could not be deleted."
 msgstr "Impossibile eliminare la cartella."
+
+msgid "Date, oldest first"
+msgstr "Data, prima i più vecchi"
+
+msgid "Date, newest first"
+msgstr "Data, prima i più recenti"
+
+msgid "Name A-Z"
+msgstr "Nome A-Z"
+
+msgid "Name Z-A"
+msgstr "Nome Z-A"
+
+msgid "Remove from playlist"
+msgstr "Rimuovi dalla playlist"
+
+msgid "Add to playlist"
+msgstr "Aggiungi alla playlist"
+
+msgid "New playlist..."
+msgstr "Nuova playlist..."
+
+msgid "Name of the new playlist"
+msgstr "Nome della nuova playlist"
+
+msgid "Added to %s."
+msgstr "Aggiunto a %s."
+
+msgid "Already in %s."
+msgstr "Già presente in %s."
+
+msgid "Removed from the playlist."
+msgstr "Rimosso dalla playlist."
+
+msgid "The playlist cannot be written: %s"
+msgstr "Impossibile scrivere la playlist: %s"
+
+msgid "This name cannot be used."
+msgstr "Questo nome non può essere usato."
+
+msgid "A playlist with this name exists already."
+msgstr "Esiste già una playlist con questo nome."
+
+msgid "The entry is not in the playlist."
+msgstr "La voce non è nella playlist."
 
 msgid "Infobar/Play"
 msgstr ""

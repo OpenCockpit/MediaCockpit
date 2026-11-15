@@ -4,7 +4,6 @@
 	<setup key="mediacockpit" title="Setup">
 		<item text="Start with top level favorites" description="Should the plugin load the top level favorite directories or the directory that was used last?">config.plugins.mediacockpit.start_home_dir</item>
 		<item text="Sort" description="Select the list sort mode.">config.plugins.mediacockpit.sort</item>
-		<item text="Sort across directories" description="Should directories be sorted recursively?">config.plugins.mediacockpit.sort_across_dirs</item>
 		<item text="Show parent directory tile" description="Should a tile be displayed for navigation to the parent directory?">config.plugins.mediacockpit.show_dirup_tile</item>
 		<item text="Tile selection size offset" description="Select the tile selection size offset.">config.plugins.mediacockpit.selection_size_offset</item>
 		<item text="Tile selection font offset" description="Select the tile selection font offset.">config.plugins.mediacockpit.selection_font_offset</item>

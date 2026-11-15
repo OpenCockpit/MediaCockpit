@@ -35,7 +35,11 @@ Show playlist content (media files, directories, etc.)
 # Manual order
 - Put the files of a folder in your own order: **PREVIOUS** / **NEXT** move the selected picture, video or song one place backward / forward
 - The order is kept in the folder, in the hidden file `.mediacockpit_order` (one file name per line), and in the cache, so it survives a rebuild of the cache and is read again when a folder is loaded
+- With *Manual sort* new files are added at the end of the order file when the folder is opened: the file is the only order
 - **EXIT** and **TEXT** go up one folder, and **EXIT** in the list of favorites leaves MediaCockpit, like **RED** and **POWER**; deleting a file is in the **MENU**
+
+# Playlist editor
+- Add the selected file to a playlist, or to a new one, remove an entry, and move entries with **PREVIOUS** / **NEXT**: the `.m3u` file is edited
 
 # Slideshows
 - Slideshows based on directories, or playlists

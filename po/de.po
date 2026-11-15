@@ -37,18 +37,6 @@ msgstr "Soll die Wiedergabe an Position: %d:%02d:%02d fortgesetzt werden?"
 msgid "None"
 msgstr "Nichts"
 
-msgid "Date sort down"
-msgstr "Datum abwärts"
-
-msgid "Date sort up"
-msgstr "Datum aufwärts"
-
-msgid "Alpha sort up"
-msgstr "Alphabetisch aufwärts"
-
-msgid "Alpha sort down"
-msgstr "Alphabetisch abwärts"
-
 msgid "beginning"
 msgstr "Filmanfang"
 
@@ -69,12 +57,6 @@ msgstr "Sortierung"
 
 msgid "Select the list sort mode."
 msgstr "Wie soll die Medienliste sortiert werden?"
-
-msgid "Sort across directories"
-msgstr "Über Verzeichnisse hinweg sortieren"
-
-msgid "Should directories be sorted recursively?"
-msgstr "Sollen Verzeichnisse rekursiv sortiert werden?"
 
 msgid "Show parent directory tile"
 msgstr "Kachel für übergeordnetes Verzeichnis"
@@ -199,12 +181,6 @@ msgstr "Verzeichnis-Auswahl"
 msgid "Can't load directory because it is not mounted."
 msgstr "Verzeichnis ist nicht eingehängt und kann daher nicht geladen werden."
 
-msgid "Do you really want to load the following bookmark?"
-msgstr "Soll das folgende Lesezeichen wirklich geladen werden?"
-
-msgid "Can't load bookmark because it is not mounted."
-msgstr "Lesezeichen ist nicht eingehängt und kann daher nicht geladen werden."
-
 msgid "Thumbnail"
 msgstr "Vorschaubild"
 
@@ -276,9 +252,6 @@ msgstr "GPS Längengrad"
 
 msgid "Exif Version"
 msgstr "Exif Version"
-
-msgid "Load cache bookmark"
-msgstr "Cache Lesezeichen laden"
 
 msgid "Setup"
 msgstr "Einstellungen"
@@ -439,9 +412,6 @@ msgstr "Datei nach hinten schieben"
 msgid "Move file forward"
 msgstr "Datei nach vorne schieben"
 
-msgid "The entries of a playlist cannot be moved."
-msgstr "Die Einträge einer Playlist können nicht verschoben werden."
-
 msgid "This is the first file."
 msgstr "Das ist die erste Datei."
 
@@ -543,6 +513,51 @@ msgstr "Soll der Ordner mit allem, was darin ist, wirklich gelöscht werden?"
 
 msgid "The folder could not be deleted."
 msgstr "Der Ordner konnte nicht gelöscht werden."
+
+msgid "Date, oldest first"
+msgstr "Datum, älteste zuerst"
+
+msgid "Date, newest first"
+msgstr "Datum, neueste zuerst"
+
+msgid "Name A-Z"
+msgstr "Name A-Z"
+
+msgid "Name Z-A"
+msgstr "Name Z-A"
+
+msgid "Remove from playlist"
+msgstr "Aus Playlist entfernen"
+
+msgid "Add to playlist"
+msgstr "Zur Playlist hinzufügen"
+
+msgid "New playlist..."
+msgstr "Neue Playlist..."
+
+msgid "Name of the new playlist"
+msgstr "Name der neuen Playlist"
+
+msgid "Added to %s."
+msgstr "Zu %s hinzugefügt."
+
+msgid "Already in %s."
+msgstr "Ist bereits in %s."
+
+msgid "Removed from the playlist."
+msgstr "Aus der Playlist entfernt."
+
+msgid "The playlist cannot be written: %s"
+msgstr "Die Playlist kann nicht geschrieben werden: %s"
+
+msgid "This name cannot be used."
+msgstr "Dieser Name kann nicht verwendet werden."
+
+msgid "A playlist with this name exists already."
+msgstr "Es gibt bereits eine Playlist mit diesem Namen."
+
+msgid "The entry is not in the playlist."
+msgstr "Der Eintrag ist nicht in der Playlist."
 
 msgid "Log level"
 msgstr "Debug Log-Stufe"

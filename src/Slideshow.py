@@ -49,7 +49,7 @@ class Slideshow():
 
         # enigma2 plays the videos, with their sound, and the background music. Only one service plays at a time: the music is
         # suspended while a movie plays and goes on after it.
-        self.video = ServicePlayer(view, self.videoEnded, self.videoStarted)
+        self.video = ServicePlayer(view, self.videoEnded, self.videoStarted, watch_end=True)
         self.music = BackgroundMusic(view, self.song_list)
 
     @property
