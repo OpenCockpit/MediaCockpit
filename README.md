@@ -20,7 +20,7 @@ Show picture and picture operations:
 - Automatic picture rotation using Exif data
 
 ## Playlist view
-[Screenshot](mdc4.jpg)
+![Screenshot](mdc4.jpg)
 Show playlists
 
 ## Playlist content view

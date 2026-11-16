@@ -72,9 +72,8 @@ class MediaCockpit(Screen, Tiles, Menu, PlaylistEditor, HelpableScreen):
         self.playlist_path = ""     # the .m3u whose entries are listed, "" when a folder is shown
         self.order_failed = set()   # folders whose order file cannot be written (read-only): not tried again
         self.first_start = True
-        # The live service is restarted and stopped again to clear the video plane ("clear video buffer"). Every play of the
-        # service makes the service list search all bouquets (~0.5 s, main thread blocked), so it is only done when needed:
-        # whenever the screen is shown, except after a slideshow in which no video was played (the video plane was not touched).
+        # The live service is stopped when the screen is shown, which also clears the video plane ("clear video buffer"): except after a
+        # slideshow in which no video was played (the video plane was not touched, and a live service that was stopped stays stopped).
         self.clear_video_buffer = True
         self.video_played = False   # set by the PictureEditor when it plays a video
         self.service_center = ServiceCenter()
@@ -157,7 +156,7 @@ class MediaCockpit(Screen, Tiles, Menu, PlaylistEditor, HelpableScreen):
         clear = self.clear_video_buffer
         self.clear_video_buffer = True
         if clear:
-            self.stopService(self.session, self.last_service)
+            self.stopService(self.session)
         else:
             logger.debug("no video was played: video plane not touched, nothing to clear")
         if self.first_start:
@@ -633,10 +632,12 @@ class MediaCockpit(Screen, Tiles, Menu, PlaylistEditor, HelpableScreen):
         self.target.bookmarks()
         self.readFileList("")
 
-    def stopService(self, session, service):
+    def stopService(self, session):
+        """Stops what plays and clears the video plane. The stop does both: eDVBVideo::stop blanks the plane, and eServiceMP3::stop does it
+        after its teardown when a video sink was in use (a PiP never blanks the primary decoder; stopWorker in servicemp3.cpp). It used to
+        play the live service again and stop it, which made the service list search all bouquets for it (0.5 s on the main thread for a
+        stream that is in none) every time MediaCockpit was opened."""
         logger.debug("clear video buffer")
-        session.nav.stopService()
-        session.nav.playService(service)
         session.nav.stopService()
 
     def startService(self, session, service):
