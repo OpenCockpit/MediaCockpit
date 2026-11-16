@@ -661,8 +661,8 @@ msgstr "Kopieren"
 msgid "FSTrim"
 msgstr "FSTrimmen"
 
-msgid "Hide"
-msgstr "Ausblenden"
+msgid "Continue in background"
+msgstr "Im Hintergrund fortsetzen"
 
 msgid "Processing"
 msgstr "In Bearbeitung"

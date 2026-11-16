@@ -61,8 +61,8 @@ msgstr "Selezionare una directory"
 msgid "Close"
 msgstr "Chiudere"
 
-msgid "Hide"
-msgstr "Nascondere"
+msgid "Continue in background"
+msgstr "Continua in background"
 
 msgid "Cancelling, please wait"
 msgstr "Annullamento in corso, attendere"

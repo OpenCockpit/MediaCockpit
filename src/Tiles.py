@@ -120,6 +120,12 @@ class Tiles(Display):
                 self.selection_frame_color)
             self.csel[f"Picture{tile_pos}"].instance.setPixmapScale(
                 BT_SCALE | BT_HALIGN_CENTER | BT_VALIGN_CENTER | BT_KEEP_ASPECT_RATIO)
+        # The loop above made every tile normal, also the selected one. When the screen is shown again without the list being read
+        # (back from the loading screen, a dialog, ...) nothing paints the tiles again, and the selected tile stayed in the normal colours.
+        if self.last_tile_pos >= 0:
+            for tile_element in ("Tile%d", "Text%d"):
+                self.csel[tile_element % self.last_tile_pos].instance.setBackgroundColor(self.selection_background_color)
+                self.csel[tile_element % self.last_tile_pos].instance.setForegroundColor(self.selection_foreground_color)
 
         # The selected tile has the larger selection font: measure the same unselected tile as for the icons. Reading Text0 while
         # tile 0 is selected took the enlarged size as the normal one, and every screen show (e.g. after loading a cache

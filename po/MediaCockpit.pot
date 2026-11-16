@@ -668,7 +668,7 @@ msgstr ""
 msgid "FSTrim"
 msgstr ""
 
-msgid "Hide"
+msgid "Continue in background"
 msgstr ""
 
 msgid "Processing"
