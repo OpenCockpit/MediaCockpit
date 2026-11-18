@@ -132,7 +132,8 @@ class MediaCockpit(Screen, Tiles, Menu, PlaylistEditor, HelpableScreen):
         )
 
         self.initConfig()
-        self.last_service = self.session.nav.getCurrentlyPlayingServiceReference()
+        # the service as it was played (of the bouquet), not what it was rewritten to for the player: see MovieCockpit.onDialogShow
+        self.last_service = self.session.nav.getCurrentlyPlayingServiceOrGroup()
         logger.info("self.last_service: %s",
                     self.last_service.toString() if self.last_service else None)
         logger.debug("bookmarks: %s", self.bookmarks)
