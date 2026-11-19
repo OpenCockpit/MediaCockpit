@@ -62,3 +62,6 @@ Show playlist content (media files, directories, etc.)
 
 ## Installation
 - https://OpenCockpit.github.io/MediaCockpit
+
+## Wiki
+- https://github.com/OpenCockpit/MediaCockpit/wiki
