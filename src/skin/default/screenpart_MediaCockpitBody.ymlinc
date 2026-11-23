@@ -1,3 +1,5 @@
+- param: {name: "width"}
+- param: {name: "height"}
 - widget:
     cornerRadius: "$radius_tile"
     name: "Frame0"

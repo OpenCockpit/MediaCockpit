@@ -1,5 +1,7 @@
 # The body of the music player in the full size window: the cover (or the music icon) on a card on the left, what is playing, the
 # position in the song and the queue on the right. Everything is placed relative to the body ($width, $height).
+- param: {name: "width"}
+- param: {name: "height"}
 - eLabel:
     backgroundColor: "md_surface_container_high"
     cornerRadius: "$radius_window"

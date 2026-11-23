@@ -4,16 +4,16 @@
 <text x="20" y="38" font-family="sans-serif" font-size="16" font-weight="bold" fill="#111111">screenpart_MediaInfoBody (1920x1080) <tspan font-family="monospace" font-size="12" font-weight="normal" fill="#555555">ids = line in screenpart_MediaInfoBody.ymlinc</tspan></text>
 <g data-screen="0" transform="translate(20,48)">
 <rect x="0" y="0" width="1920" height="1080" fill="#ffffff" stroke="#999999" stroke-width="1"/>
-<rect data-ref="0:0" data-src="screenpart_MediaInfoBody.ymlinc:1" x="100" y="100" width="150" height="150" fill="#4e79a7" fill-opacity="0.45" stroke="#000000" stroke-opacity="0.6" stroke-width="1"><title>screenpart_MediaInfoBody.ymlinc:1
+<rect data-ref="0:0" data-src="screenpart_MediaInfoBody.ymlinc:3" x="100" y="100" width="150" height="150" fill="#4e79a7" fill-opacity="0.45" stroke="#000000" stroke-opacity="0.6" stroke-width="1"><title>screenpart_MediaInfoBody.ymlinc:3
 &lt;widget&gt; name=&quot;icon&quot; position=&quot;100,100&quot; size=&quot;150,150&quot; zPosition=&quot;3&quot;</title></rect>
-<rect data-ref="0:1" data-src="screenpart_MediaInfoBody.ymlinc:6" x="0" y="0" width="350" height="350" fill="#f28e2b" fill-opacity="0.45" stroke="#000000" stroke-opacity="0.6" stroke-width="1"><title>screenpart_MediaInfoBody.ymlinc:6
+<rect data-ref="0:1" data-src="screenpart_MediaInfoBody.ymlinc:8" x="0" y="0" width="350" height="350" fill="#f28e2b" fill-opacity="0.45" stroke="#000000" stroke-opacity="0.6" stroke-width="1"><title>screenpart_MediaInfoBody.ymlinc:8
 &lt;widget&gt; name=&quot;thumbnail&quot; position=&quot;0,0&quot; size=&quot;350,350&quot; zPosition=&quot;3&quot;</title></rect>
-<rect data-ref="0:2" data-src="screenpart_MediaInfoBody.ymlinc:11" x="588" y="0" width="1332" height="1080" fill="#121212" fill-opacity="0.45" stroke="#000000" stroke-opacity="0.6" stroke-width="1"><title>screenpart_MediaInfoBody.ymlinc:11
+<rect data-ref="0:2" data-src="screenpart_MediaInfoBody.ymlinc:13" x="588" y="0" width="1332" height="1080" fill="#121212" fill-opacity="0.45" stroke="#000000" stroke-opacity="0.6" stroke-width="1"><title>screenpart_MediaInfoBody.ymlinc:13
 &lt;widget&gt; backgroundColorSelected=&quot;md_inverse_surface&quot; foregroundColorSelected=&quot;md_inverse_on_surface&quot; itemCornerRadiusSelected=&quot;12&quot; position=&quot;588,0&quot; render=&quot;Listbox&quot; size=&quot;1332,1080&quot; source=&quot;list&quot; zPosition=&quot;3&quot; backgroundColor=&quot;md_surface&quot; enableWrapAround=&quot;1&quot; foregroundColor=&quot;md_on_surface&quot; scrollbarMode=&quot;showOnDemand&quot; scrollbarSliderBorderColor=&quot;md_on_surface&quot; scrollbarSliderBorderWidth=&quot;1&quot; scrollbarSliderForegroundColor=&quot;md_on_surface_variant&quot; scrollbarWidth=&quot;5&quot; selectionFrame=&quot;none&quot; transparent=&quot;1&quot;</title></rect>
 <g pointer-events="none" font-family="monospace" font-size="12" fill="#000000" stroke="#ffffff" stroke-width="3" stroke-opacity="0.85" stroke-linejoin="round" paint-order="stroke">
-<text x="104" y="114"><tspan font-weight="bold">#1</tspan> icon</text>
-<text x="4" y="14"><tspan font-weight="bold">#6</tspan> thumbnail</text>
-<text x="592" y="14"><tspan font-weight="bold">#11</tspan> list (Listbox)</text>
+<text x="104" y="114"><tspan font-weight="bold">#3</tspan> icon</text>
+<text x="4" y="14"><tspan font-weight="bold">#8</tspan> thumbnail</text>
+<text x="592" y="14"><tspan font-weight="bold">#13</tspan> list (Listbox)</text>
 </g>
 </g>
 </svg>
