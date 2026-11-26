@@ -8,7 +8,6 @@ screen:
         imagepath: "~/../images"
     - widget:
         font: "$F_bigger"
-        foregroundColor: "FdLcdTitleForeground"
         halign: "center"
         position: "0,0"
         render: "Label"

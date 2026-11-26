@@ -1,3 +1,5 @@
+- param: {name: "width"}
+- param: {name: "height"}
 - for:
     var: "$i"
     range: [0, 14]
